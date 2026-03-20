@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baby Health Journal</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf8f5;
+    --surface: #ffffff;
+    --surface2: #f4f1ec;
+    --border: #e8e2d9;
+    --text: #1a1714;
+    --text-muted: #8a8078;
+    --accent: #c8956c;
+    --accent-light: #f5ede4;
+    --food: #6b9e6b;
+    --food-light: #edf5ed;
+    --symptom: #c07b5a;
+    --symptom-light: #faeee8;
+    --sickness: #7b8fb5;
+    --sickness-light: #eaeff8;
+    --medication: #9b76b5;
+    --medication-light: #f2ecf8;
+    --other: #b5a046;
+    --other-light: #f7f3e3;
+    --shadow: 0 2px 12px rgba(26,23,20,0.07);
+    --shadow-lg: 0 8px 32px rgba(26,23,20,0.12);
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  .header-title span { color: var(--accent); }
+  .header-nav {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+  }
+  .nav-btn {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .nav-btn.active, .nav-btn:hover {
+    background: var(--accent-light);
+    color: var(--accent);
+  }
+  .add-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+    margin-left: 8px;
+  }
+  .add-btn:hover { background: #b5834f; transform: translateY(-1px); }
+
+  /* LAYOUT */
+  .app { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+  /* VIEWS */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* CALENDAR VIEW */
+  .cal-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .cal-month {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 500;
+  }
+  .cal-arrow {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    transition: all 0.15s;
+    color: var(--text);
+  }
+  .cal-arrow:hover { border-color: var(--accent); color: var(--accent); }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .cal-header-cell {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 0;
+  }
+  .cal-cell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px;
+    min-height: 90px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .cal-cell:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+  .cal-cell.today { border-color: var(--accent); }
+  .cal-cell.today .cal-day-num { color: var(--accent); font-weight: 700; }
+  .cal-cell.empty { background: transparent; border-color: transparent; cursor: default; }
+  .cal-cell.empty:hover { box-shadow: none; border-color: transparent; }
+  .cal-day-num {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .cal-dots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+  .cal-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+  }
+  .cal-dot.food { background: var(--food); }
+  .cal-dot.symptom { background: var(--symptom); }
+  .cal-dot.sickness { background: var(--sickness); }
+  .cal-dot.medication { background: var(--medication); }
+  .cal-dot.other { background: var(--other); }
+  .cal-preview {
+    font-size: 10px;
+    color: var(--text-muted);
+    line-height: 1.4;
+    margin-top: 3px;
+  }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+
+  /* LOG VIEW */
+  .log-filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .filter-chip {
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.15s;
+  }
+  .filter-chip.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+  .filter-chip.food.active { border-color: var(--food); background: var(--food-light); color: var(--food); }
+  .filter-chip.symptom.active { border-color: var(--symptom); background: var(--symptom-light); color: var(--symptom); }
+  .filter-chip.sickness.active { border-color: var(--sickness); background: var(--sickness-light); color: var(--sickness); }
+  .filter-chip.medication.active { border-color: var(--medication); background: var(--medication-light); color: var(--medication); }
+  .filter-chip.other.active { border-color: var(--other); background: var(--other-light); color: var(--other); }
+
+  .day-group { margin-bottom: 24px; }
+  .day-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .entry-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+  .entry-card:hover { box-shadow: var(--shadow); border-color: #d5cfc7; }
+  .entry-type-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .entry-type-badge.food { background: var(--food-light); color: var(--food); }
+  .entry-type-badge.symptom { background: var(--symptom-light); color: var(--symptom); }
+  .entry-type-badge.sickness { background: var(--sickness-light); color: var(--sickness); }
+  .entry-type-badge.medication { background: var(--medication-light); color: var(--medication); }
+  .entry-type-badge.other { background: var(--other-light); color: var(--other); }
+
+  .entry-main { flex: 1; min-width: 0; }
+  .entry-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+  .entry-detail { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+  .entry-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .entry-delete {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .entry-card:hover .entry-delete { opacity: 1; }
+  .entry-delete:hover { color: #c0392b; }
+
+  /* TRENDS VIEW */
+  .trends-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 20px;
+  }
+  .trend-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .trend-card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .trend-card-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  /* Bar chart */
+  .bar-chart { display: flex; flex-direction: column; gap: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-label { font-size: 12px; width: 110px; flex-shrink: 0; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { flex: 1; background: var(--surface2); border-radius: 4px; height: 8px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+  .bar-val { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--text-muted); width: 24px; text-align: right; }
+
+  /* Correlation table */
+  .corr-table { width: 100%; border-collapse: collapse; }
+  .corr-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .corr-table td {
+    padding: 8px 0;
+    font-size: 13px;
+    border-bottom: 1px solid var(--surface2);
+  }
+  .corr-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .corr-badge.high { background: #fce8e8; color: #c0392b; }
+  .corr-badge.medium { background: #fef3e2; color: #d68910; }
+  .corr-badge.low { background: var(--food-light); color: var(--food); }
+
+  /* Sparkline */
+  .sparkline-wrap { margin-top: 8px; }
+  .sparkline-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(26,23,20,0.4);
+    backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 28px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    transform: translateY(12px);
+    transition: transform 0.2s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 500;
+    margin-bottom: 20px;
+  }
+  .form-group { margin-bottom: 16px; }
+  .form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg);
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+  .form-textarea { resize: vertical; min-height: 70px; }
+  .type-pills {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .type-pill {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--text-muted);
+  }
+  .type-pill:hover { border-color: #ccc; }
+  .type-pill.selected.food { border-color: var(--food); background: var(--food-light); color: var(--food); }
+  .type-pill.selected.symptom { border-color: var(--symptom); background: var(--symptom-light); color: var(--symptom); }
+  .type-pill.selected.sickness { border-color: var(--sickness); background: var(--sickness-light); color: var(--sickness); }
+  .type-pill.selected.medication { border-color: var(--medication); background: var(--medication-light); color: var(--medication); }
+  .type-pill.selected.other { border-color: var(--other); background: var(--other-light); color: var(--other); }
+
+  .severity-row { display: flex; gap: 8px; }
+  .severity-btn {
+    flex: 1; padding: 8px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--text-muted);
+    text-align: center;
+  }
+  .severity-btn.selected.mild { border-color: var(--food); background: var(--food-light); color: var(--food); }
+  .severity-btn.selected.moderate { border-color: var(--other); background: var(--other-light); color: var(--other); }
+  .severity-btn.selected.severe { border-color: var(--symptom); background: var(--symptom-light); color: var(--symptom); }
+
+  .modal-actions {
+    display: flex; gap: 10px; margin-top: 24px;
+    justify-content: flex-end;
+  }
+  .btn-cancel {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--text-muted);
+  }
+  .btn-save {
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-save:hover { background: #b5834f; }
+
+  /* Day detail panel */
+  .day-detail-overlay {
+    position: fixed; inset: 0;
+    background: rgba(26,23,20,0.3);
+    display: flex; align-items: flex-end; justify-content: center;
+    z-index: 500;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .day-detail-overlay.open { opacity: 1; pointer-events: all; }
+  .day-detail-panel {
+    background: var(--surface);
+    border-radius: 16px 16px 0 0;
+    padding: 24px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 70vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+  }
+  .day-detail-overlay.open .day-detail-panel { transform: translateY(0); }
+  .day-detail-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .day-detail-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-muted);
+  }
+  .empty-state-icon { font-size: 36px; margin-bottom: 12px; }
+  .empty-state-text { font-size: 14px; line-height: 1.6; }
+
+  canvas { max-width: 100%; }
+
+  @media (max-width: 640px) {
+    .app { padding: 16px; }
+    .header { padding: 0 16px; gap: 12px; }
+    .header-title { font-size: 16px; }
+    .nav-btn { padding: 5px 10px; font-size: 12px; }
+    .cal-cell { min-height: 60px; padding: 5px; }
+    .trends-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-title">little <span>journal</span></div>
+  <nav class="header-nav">
+    <button class="nav-btn active" onclick="switchView('calendar')">Calendar</button>
+    <button class="nav-btn" onclick="switchView('log')">Log</button>
+    <button class="nav-btn" onclick="switchView('trends')">Trends</button>
+  </nav>
+  <button class="add-btn" onclick="openModal()">+ Add entry</button>
+</header>
+
+<div class="app">
+
+  <!-- CALENDAR VIEW -->
+  <div class="view active" id="view-calendar">
+    <div class="cal-controls">
+      <button class="cal-arrow" onclick="changeMonth(-1)">&#8592;</button>
+      <div class="cal-month" id="cal-month-label"></div>
+      <button class="cal-arrow" onclick="changeMonth(1)">&#8594;</button>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--food)"></div>Food</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--symptom)"></div>Symptom</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--sickness)"></div>Sickness</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--medication)"></div>Medication</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--other)"></div>Other</div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+
+  <!-- LOG VIEW -->
+  <div class="view" id="view-log">
+    <div class="log-filters">
+      <button class="filter-chip active" data-filter="all" onclick="setFilter('all')">All</button>
+      <button class="filter-chip food" data-filter="food" onclick="setFilter('food')">🌿 Food</button>
+      <button class="filter-chip symptom" data-filter="symptom" onclick="setFilter('symptom')">⚡ Symptom</button>
+      <button class="filter-chip sickness" data-filter="sickness" onclick="setFilter('sickness')">🤒 Sickness</button>
+      <button class="filter-chip medication" data-filter="medication" onclick="setFilter('medication')">💊 Medication</button>
+      <button class="filter-chip other" data-filter="other" onclick="setFilter('other')">📝 Other</button>
+    </div>
+    <div id="log-entries"></div>
+  </div>
+
+  <!-- TRENDS VIEW -->
+  <div class="view" id="view-trends">
+    <div class="trends-grid" id="trends-container"></div>
+  </div>
+
+</div>
+
+<!-- ADD ENTRY MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-title">New entry</div>
+
+    <div class="form-group">
+      <label class="form-label">Date</label>
+      <input type="date" class="form-input" id="entry-date">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Time</label>
+      <input type="time" class="form-input" id="entry-time">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Type</label>
+      <div class="type-pills">
+        <button class="type-pill food selected" data-type="food" onclick="selectType('food')">🌿 Food</button>
+        <button class="type-pill symptom" data-type="symptom" onclick="selectType('symptom')">⚡ Symptom</button>
+        <button class="type-pill sickness" data-type="sickness" onclick="selectType('sickness')">🤒 Sickness</button>
+        <button class="type-pill medication" data-type="medication" onclick="selectType('medication')">💊 Medication</button>
+        <button class="type-pill other" data-type="other" onclick="selectType('other')">📝 Other</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" id="title-label">What was eaten?</label>
+      <input type="text" class="form-input" id="entry-title" placeholder="e.g. Mango, broccoli, chicken">
+    </div>
+
+    <div class="form-group" id="severity-group">
+      <label class="form-label">Severity</label>
+      <div class="severity-row">
+        <button class="severity-btn mild selected" onclick="selectSeverity('mild')">Mild</button>
+        <button class="severity-btn moderate" onclick="selectSeverity('moderate')">Moderate</button>
+        <button class="severity-btn severe" onclick="selectSeverity('severe')">Severe</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-textarea" id="entry-notes" placeholder="Any additional details…"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModalDirect()">Cancel</button>
+      <button class="btn-save" onclick="saveEntry()">Save entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- DAY DETAIL PANEL -->
+<div class="day-detail-overlay" id="day-detail-overlay" onclick="closeDayDetail(event)">
+  <div class="day-detail-panel">
+    <div class="day-detail-title" id="day-detail-title"></div>
+    <div class="day-detail-count" id="day-detail-count"></div>
+    <div id="day-detail-entries"></div>
+  </div>
+</div>
+
+<script>
+// ---- DATA ----
+const STORAGE_KEY = 'baby-journal-v1';
+let entries = [];
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) entries = JSON.parse(raw);
+  } catch(e) { entries = []; }
+  if (!entries.length) seedSampleData();
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
+
+function seedSampleData() {
+  const today = new Date();
+  const fmt = (d) => d.toISOString().split('T')[0];
+  const daysAgo = (n) => { const d = new Date(today); d.setDate(d.getDate()-n); return fmt(d); };
+
+  entries = [
+    { id:1, date: daysAgo(0), time:'08:30', type:'food', title:'Oatmeal with banana', notes:'Ate well, no issues', severity:null },
+    { id:2, date: daysAgo(0), time:'12:00', type:'food', title:'Pureed sweet potato', notes:'Loved it', severity:null },
+    { id:3, date: daysAgo(1), time:'09:00', type:'food', title:'Mango puree', notes:'First time trying mango', severity:null },
+    { id:4, date: daysAgo(1), time:'18:00', type:'symptom', title:'Mild rash on cheek', notes:'Appeared 6h after mango', severity:'mild' },
+    { id:5, date: daysAgo(2), time:'07:00', type:'sickness', title:'Runny nose', notes:'Started overnight', severity:'mild' },
+    { id:6, date: daysAgo(2), time:'10:00', type:'medication', title:'Saline drops', notes:'Used twice today', severity:null },
+    { id:7, date: daysAgo(3), time:'08:00', type:'food', title:'Avocado', notes:'Great texture response', severity:null },
+    { id:8, date: daysAgo(3), time:'13:00', type:'food', title:'Pea puree', notes:'Not a fan', severity:null },
+    { id:9, date: daysAgo(4), time:'11:00', type:'symptom', title:'Loose stool', notes:'3x today', severity:'moderate' },
+    { id:10, date: daysAgo(4), time:'08:30', type:'food', title:'Apple puree', notes:'', severity:null },
+    { id:11, date: daysAgo(5), time:'08:00', type:'food', title:'Oatmeal', notes:'Daily staple', severity:null },
+    { id:12, date: daysAgo(5), time:'15:00', type:'other', title:'Teething', notes:'Drooling a lot, chewing everything', severity:null },
+    { id:13, date: daysAgo(6), time:'09:00', type:'food', title:'Carrot puree', notes:'', severity:null },
+    { id:14, date: daysAgo(6), time:'14:00', type:'sickness', title:'Fever 38.1°C', notes:'Gave paracetamol', severity:'moderate' },
+    { id:15, date: daysAgo(6), time:'14:30', type:'medication', title:'Paracetamol 2.5ml', notes:'Temp came down after 1h', severity:null },
+    { id:16, date: daysAgo(7), time:'08:00', type:'food', title:'Butternut squash', notes:'', severity:null },
+    { id:17, date: daysAgo(8), time:'09:00', type:'food', title:'Mango puree', notes:'Second exposure', severity:null },
+    { id:18, date: daysAgo(8), time:'16:00', type:'symptom', title:'Rash on face', notes:'Appeared again after mango', severity:'mild' },
+    { id:19, date: daysAgo(10), time:'08:30', type:'food', title:'Broccoli', notes:'First time', severity:null },
+    { id:20, date: daysAgo(10), time:'12:00', type:'food', title:'Chicken puree', notes:'Good protein source', severity:null },
+  ];
+  saveData();
+}
+
+// ---- STATE ----
+let currentView = 'calendar';
+let currentMonth = new Date();
+currentMonth.setDate(1);
+let activeFilter = 'all';
+let selectedType = 'food';
+let selectedSeverity = 'mild';
+
+// ---- NAV ----
+function switchView(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  document.querySelectorAll('.nav-btn')[['calendar','log','trends'].indexOf(view)].classList.add('active');
+  currentView = view;
+  if (view === 'calendar') renderCalendar();
+  if (view === 'log') renderLog();
+  if (view === 'trends') renderTrends();
+}
+
+// ---- CALENDAR ----
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function changeMonth(dir) {
+  currentMonth.setMonth(currentMonth.getMonth() + dir);
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const label = document.getElementById('cal-month-label');
+  label.textContent = MONTHS[currentMonth.getMonth()] + ' ' + currentMonth.getFullYear();
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+
+  DAYS.forEach(d => {
+    const cell = document.createElement('div');
+    cell.className = 'cal-header-cell';
+    cell.textContent = d;
+    grid.appendChild(cell);
+  });
+
+  const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
+  const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth()+1, 0).getDate();
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  for (let i = 0; i < firstDay; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell empty';
+    grid.appendChild(cell);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayEntries = entries.filter(e => e.date === dateStr);
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell' + (dateStr === todayStr ? ' today' : '');
+    cell.onclick = () => openDayDetail(dateStr, dayEntries);
+
+    const num = document.createElement('div');
+    num.className = 'cal-day-num';
+    num.textContent = d;
+    cell.appendChild(num);
+
+    if (dayEntries.length) {
+      const dots = document.createElement('div');
+      dots.className = 'cal-dots';
+      const seen = new Set();
+      dayEntries.forEach(e => {
+        if (!seen.has(e.type)) {
+          const dot = document.createElement('div');
+          dot.className = 'cal-dot ' + e.type;
+          dots.appendChild(dot);
+          seen.add(e.type);
+        }
+      });
+      cell.appendChild(dots);
+
+      const preview = document.createElement('div');
+      preview.className = 'cal-preview';
+      preview.textContent = dayEntries.slice(0,2).map(e => e.title).join(', ') + (dayEntries.length > 2 ? ` +${dayEntries.length-2}` : '');
+      cell.appendChild(preview);
+    }
+
+    grid.appendChild(cell);
+  }
+}
+
+// ---- DAY DETAIL ----
+function openDayDetail(dateStr, dayEntries) {
+  const overlay = document.getElementById('day-detail-overlay');
+  const parts = dateStr.split('-');
+  const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  document.getElementById('day-detail-title').textContent = d.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+  document.getElementById('day-detail-count').textContent = dayEntries.length ? `${dayEntries.length} entr${dayEntries.length===1?'y':'ies'}` : 'No entries';
+  const cont = document.getElementById('day-detail-entries');
+  cont.innerHTML = '';
+  if (!dayEntries.length) {
+    cont.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">No entries for this day.<br><br><button class="btn-save" onclick="closeDayDetailDirect();openModal('${dateStr}')">Add entry</button></div>`;
+  } else {
+    dayEntries.sort((a,b) => a.time.localeCompare(b.time)).forEach(e => {
+      cont.appendChild(buildEntryCard(e));
+    });
+  }
+  overlay.classList.add('open');
+}
+
+function closeDayDetail(e) {
+  if (e.target === document.getElementById('day-detail-overlay')) closeDayDetailDirect();
+}
+function closeDayDetailDirect() {
+  document.getElementById('day-detail-overlay').classList.remove('open');
+}
+
+// ---- LOG VIEW ----
+function setFilter(f) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(c => {
+    c.classList.remove('active');
+    if (c.dataset.filter === f) c.classList.add('active');
+  });
+  renderLog();
+}
+
+function renderLog() {
+  const cont = document.getElementById('log-entries');
+  const filtered = activeFilter === 'all' ? entries : entries.filter(e => e.type === activeFilter);
+  filtered.sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
+
+  if (!filtered.length) {
+    cont.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">No entries yet.<br>Tap <strong>+ Add entry</strong> to get started.</div></div>`;
+    return;
+  }
+
+  const byDay = {};
+  filtered.forEach(e => {
+    if (!byDay[e.date]) byDay[e.date] = [];
+    byDay[e.date].push(e);
+  });
+
+  cont.innerHTML = '';
+  Object.keys(byDay).sort((a,b) => b.localeCompare(a)).forEach(date => {
+    const group = document.createElement('div');
+    group.className = 'day-group';
+    const parts = date.split('-');
+    const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+    const label = document.createElement('div');
+    label.className = 'day-label';
+    label.textContent = d.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
+    group.appendChild(label);
+    byDay[date].sort((a,b) => a.time.localeCompare(b.time)).forEach(e => {
+      group.appendChild(buildEntryCard(e));
+    });
+    cont.appendChild(group);
+  });
+}
+
+function buildEntryCard(e) {
+  const icons = { food:'🌿', symptom:'⚡', sickness:'🤒', medication:'💊', other:'📝' };
+  const labels = { food:'Food', symptom:'Symptom', sickness:'Sickness', medication:'Medication', other:'Other' };
+  const card = document.createElement('div');
+  card.className = 'entry-card';
+  card.innerHTML = `
+    <span class="entry-type-badge ${e.type}">${icons[e.type]} ${labels[e.type]}</span>
+    <div class="entry-main">
+      <div class="entry-title">${e.title}</div>
+      ${e.notes ? `<div class="entry-detail">${e.notes}${e.severity ? ` · <strong>${e.severity}</strong>` : ''}</div>` : e.severity ? `<div class="entry-detail"><strong>${e.severity}</strong></div>` : ''}
+    </div>
+    <div class="entry-time">${e.time || ''}</div>
+    <button class="entry-delete" onclick="deleteEntry(${e.id}, event)" title="Delete">×</button>
+  `;
+  return card;
+}
+
+function deleteEntry(id, event) {
+  event.stopPropagation();
+  entries = entries.filter(e => e.id !== id);
+  saveData();
+  if (currentView === 'log') renderLog();
+  if (currentView === 'calendar') renderCalendar();
+  if (currentView === 'trends') renderTrends();
+  // also refresh day detail if open
+  const panel = document.getElementById('day-detail-overlay');
+  if (panel.classList.contains('open')) closeDayDetailDirect();
+}
+
+// ---- MODAL ----
+function openModal(prefillDate) {
+  const overlay = document.getElementById('modal-overlay');
+  const today = prefillDate || new Date().toISOString().split('T')[0];
+  document.getElementById('entry-date').value = today;
+  const now = new Date();
+  document.getElementById('entry-time').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  document.getElementById('entry-title').value = '';
+  document.getElementById('entry-notes').value = '';
+  selectType('food');
+  selectSeverity('mild');
+  overlay.classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModalDirect();
+}
+function closeModalDirect() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function selectType(type) {
+  selectedType = type;
+  document.querySelectorAll('.type-pill').forEach(p => {
+    p.classList.remove('selected');
+    if (p.dataset.type === type) p.classList.add('selected');
+  });
+  const labels = { food:'What was eaten?', symptom:'What symptom?', sickness:'What illness?', medication:'What medication / supplement?', other:'What activity or note?' };
+  document.getElementById('title-label').textContent = labels[type];
+  const showSeverity = type === 'symptom' || type === 'sickness';
+  document.getElementById('severity-group').style.display = showSeverity ? 'block' : 'none';
+}
+
+function selectSeverity(sev) {
+  selectedSeverity = sev;
+  document.querySelectorAll('.severity-btn').forEach(b => {
+    b.classList.remove('selected');
+  });
+  const btn = document.querySelector(`.severity-btn.${sev}`);
+  if (btn) btn.classList.add('selected', sev);
+}
+
+function saveEntry() {
+  const date = document.getElementById('entry-date').value;
+  const time = document.getElementById('entry-time').value;
+  const title = document.getElementById('entry-title').value.trim();
+  const notes = document.getElementById('entry-notes').value.trim();
+  if (!date || !title) { alert('Please fill in the date and a description.'); return; }
+  const hasSeverity = selectedType === 'symptom' || selectedType === 'sickness';
+  const entry = {
+    id: Date.now(),
+    date, time, type: selectedType, title, notes,
+    severity: hasSeverity ? selectedSeverity : null
+  };
+  entries.push(entry);
+  saveData();
+  closeModalDirect();
+  if (currentView === 'log') renderLog();
+  if (currentView === 'calendar') renderCalendar();
+  if (currentView === 'trends') renderTrends();
+}
+
+// ---- TRENDS ----
+function renderTrends() {
+  const cont = document.getElementById('trends-container');
+  cont.innerHTML = '';
+  if (entries.length < 3) {
+    cont.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">📊</div><div class="empty-state-text">Add more entries to see trends and patterns.</div></div>`;
+    return;
+  }
+  cont.appendChild(buildTopFoodsCard());
+  cont.appendChild(buildSymptomFreqCard());
+  cont.appendChild(buildCorrelationCard());
+  cont.appendChild(buildTimelineCard());
+  cont.appendChild(buildMedicationCard());
+  cont.appendChild(buildSicknessCard());
+}
+
+function buildTopFoodsCard() {
+  const card = document.createElement('div');
+  card.className = 'trend-card';
+  const foods = entries.filter(e => e.type === 'food');
+  const counts = {};
+  foods.forEach(e => { counts[e.title] = (counts[e.title]||0)+1; });
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const max = sorted[0]?.[1] || 1;
+  const colors = ['#6b9e6b','#7aad7a','#8abc8a','#99cb99','#a9d9a9','#b8e7b8'];
+  card.innerHTML = `<div class="trend-card-title">Most frequent foods</div><div class="trend-card-sub">Last ${foods.length} food entries</div>
+  <div class="bar-chart">${sorted.map(([name,count],i) => `
+    <div class="bar-row">
+      <div class="bar-label" title="${name}">${name}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(count/max*100).toFixed(0)}%;background:${colors[i]||colors[5]}"></div></div>
+      <div class="bar-val">${count}</div>
+    </div>`).join('')}</div>`;
+  return card;
+}
+
+function buildSymptomFreqCard() {
+  const card = document.createElement('div');
+  card.className = 'trend-card';
+  const symptoms = entries.filter(e => e.type === 'symptom' || e.type === 'sickness');
+  const counts = {};
+  symptoms.forEach(e => { counts[e.title] = (counts[e.title]||0)+1; });
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const max = sorted[0]?.[1] || 1;
+  if (!sorted.length) {
+    card.innerHTML = `<div class="trend-card-title">Symptom frequency</div><div class="trend-card-sub">No symptoms logged yet</div>`;
+    return card;
+  }
+  card.innerHTML = `<div class="trend-card-title">Symptom frequency</div><div class="trend-card-sub">${symptoms.length} total symptom / sickness entries</div>
+  <div class="bar-chart">${sorted.map(([name,count]) => `
+    <div class="bar-row">
+      <div class="bar-label" title="${name}">${name}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(count/max*100).toFixed(0)}%;background:var(--symptom)"></div></div>
+      <div class="bar-val">${count}</div>
+    </div>`).join('')}</div>`;
+  return card;
+}
+
+function buildCorrelationCard() {
+  const card = document.createElement('div');
+  card.className = 'trend-card';
+
+  // For each food, check if symptoms appear within 0-3 days after
+  const foods = entries.filter(e => e.type === 'food');
+  const symptoms = entries.filter(e => e.type === 'symptom');
+  const corr = {};
+
+  foods.forEach(food => {
+    const foodDate = new Date(food.date);
+    const nearby = symptoms.filter(s => {
+      const sd = new Date(s.date);
+      const diff = (sd - foodDate) / (1000*60*60*24);
+      return diff >= 0 && diff <= 3;
+    });
+    if (nearby.length) {
+      if (!corr[food.title]) corr[food.title] = { count: 0, symptoms: new Set(), instances: 0 };
+      corr[food.title].count += nearby.length;
+      corr[food.title].instances += 1;
+      nearby.forEach(s => corr[food.title].symptoms.add(s.title));
+    }
+  });
+
+  // Count how many times each food appears
+  const foodCounts = {};
+  foods.forEach(e => { foodCounts[e.title] = (foodCounts[e.title]||0)+1; });
+
+  const rows = Object.entries(corr)
+    .map(([food, data]) => ({
+      food,
+      rate: data.count / (foodCounts[food]||1),
+      symptoms: Array.from(data.symptoms),
+      count: data.count
+    }))
+    .filter(r => r.count > 0)
+    .sort((a,b) => b.rate - a.rate)
+    .slice(0,5);
+
+  card.innerHTML = `<div class="trend-card-title">Food → symptom patterns</div>
+  <div class="trend-card-sub">Symptoms appearing within 3 days of food</div>`;
+
+  if (!rows.length) {
+    card.innerHTML += `<div style="color:var(--text-muted);font-size:13px;margin-top:8px;">No patterns detected yet. Keep logging!</div>`;
+    return card;
+  }
+
+  const table = document.createElement('table');
+  table.className = 'corr-table';
+  table.innerHTML = `<thead><tr><th>Food</th><th>Symptom(s)</th><th>Signal</th></tr></thead>
+  <tbody>${rows.map(r => {
+    const level = r.rate >= 0.6 ? 'high' : r.rate >= 0.3 ? 'medium' : 'low';
+    const label = r.rate >= 0.6 ? '⚠ Watch' : r.rate >= 0.3 ? '~ Possible' : '✓ Low';
+    return `<tr>
+      <td style="font-weight:600">${r.food}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${r.symptoms.slice(0,2).join(', ')}</td>
+      <td><span class="corr-badge ${level}">${label}</span></td>
+    </tr>`;
+  }).join('')}</tbody>`;
+  card.appendChild(table);
+  return card;
+}
+
+function buildTimelineCard() {
+  const card = document.createElement('div');
+  card.className = 'trend-card';
+  card.style.gridColumn = 'span 2';
+  card.innerHTML = `<div class="trend-card-title">30-day activity timeline</div>
+  <div class="trend-card-sub">Each row = one day. Dots = entries by type.</div>`;
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'overflow-x:auto;margin-top:12px;';
+
+  const today = new Date();
+  const rows = [];
+  const types = ['food','symptom','sickness','medication','other'];
+  const colors = { food:'var(--food)', symptom:'var(--symptom)', sickness:'var(--sickness)', medication:'var(--medication)', other:'var(--other)' };
+
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    const dayEntries = entries.filter(e => e.date === dateStr);
+    const label = i === 0 ? 'Today' : d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const dots = types.map(t => {
+      const n = dayEntries.filter(e => e.type === t).length;
+      return n ? `<span style="display:inline-block;width:${Math.min(n*8+6,24)}px;height:10px;border-radius:5px;background:${colors[t]};margin-right:3px;" title="${n} ${t}"></span>` : '';
+    }).join('');
+    rows.push(`<div style="display:flex;align-items:center;gap:10px;padding:3px 0;border-bottom:1px solid var(--surface2);">
+      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-muted);width:60px;flex-shrink:0">${label}</span>
+      <span style="flex:1">${dots || '<span style="font-size:10px;color:#ccc">—</span>'}</span>
+    </div>`);
+  }
+  wrap.innerHTML = rows.join('');
+  card.appendChild(wrap);
+  return card;
+}
+
+function buildMedicationCard() {
+  const card = document.createElement('div');
+  card.className = 'trend-card';
+  const meds = entries.filter(e => e.type === 'medication');
+  const counts = {};
+  meds.forEach(e => { counts[e.title] = (counts[e.title]||0)+1; });
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const max = sorted[0]?.[1] || 1;
+
+  if (!sorted.length) {
+    card.innerHTML = `<div class="trend-card-title">Medications & supplements</div><div class="trend-card-sub">No medications logged yet</div>`;
+    return card;
+  }
+  card.innerHTML = `<div class="trend-card-title">Medications & supplements</div><div class="trend-card-sub">${meds.length} total entries</div>
+  <div class="bar-chart">${sorted.map(([name,count]) => `
+    <div class="bar-row">
+      <div class="bar-label" title="${name}">${name}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(count/max*100).toFixed(0)}%;background:var(--medication)"></div></div>
+      <div class="bar-val">${count}</div>
+    </div>`).join('')}</div>`;
+  return card;
+}
+
+function buildSicknessCard() {
+  const card = document.createElement('div');
+  card.className = 'trend-card';
+  const sick = entries.filter(e => e.type === 'sickness' || e.type === 'symptom');
+
+  // Group by week
+  const byWeek = {};
+  sick.forEach(e => {
+    const d = new Date(e.date);
+    const weekStart = new Date(d);
+    weekStart.setDate(d.getDate() - d.getDay());
+    const key = weekStart.toISOString().split('T')[0];
+    byWeek[key] = (byWeek[key]||0)+1;
+  });
+
+  const weeks = Object.keys(byWeek).sort().slice(-8);
+  const max = Math.max(...weeks.map(w => byWeek[w]), 1);
+
+  card.innerHTML = `<div class="trend-card-title">Weekly symptom load</div>
+  <div class="trend-card-sub">Symptoms + sickness events per week</div>
+  <div style="margin-top:12px;display:flex;align-items:flex-end;gap:6px;height:80px;">
+    ${weeks.map(w => {
+      const val = byWeek[w];
+      const height = (val/max*100).toFixed(0);
+      const d = new Date(w);
+      const label = d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div style="width:100%;background:var(--symptom);opacity:0.85;border-radius:4px 4px 0 0;height:${height}%;min-height:4px;" title="${val} events week of ${label}"></div>
+        <div style="font-size:9px;color:var(--text-muted);text-align:center;font-family:'DM Mono',monospace;">${label.split(' ')[1]}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+  if (!weeks.length) {
+    card.innerHTML = `<div class="trend-card-title">Weekly symptom load</div><div class="trend-card-sub">No symptoms logged yet</div>`;
+  }
+  return card;
+}
+
+// ---- INIT ----
+loadData();
+renderCalendar();
+selectType('food');
+document.getElementById('severity-group').style.display = 'none';
+</script>
+</body>
+</html>
