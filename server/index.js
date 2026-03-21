@@ -1,7 +1,12 @@
 import express from 'express'
 import cors from 'cors'
 import { randomUUID } from 'crypto'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
+import { existsSync } from 'fs'
 import db from './db.js'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const app = express()
 app.use(cors())
@@ -105,6 +110,15 @@ function toEntry(r) {
     sleepQuality: r.sleep_quality || '', sleepDuration: r.sleep_duration || '',
     createdAt: r.created_at,
   }
+}
+
+// Serve built frontend in production
+const distPath = join(__dirname, '../dist')
+if (existsSync(distPath)) {
+  app.use(express.static(distPath))
+  app.get('*', (req, res) => {
+    res.sendFile(join(distPath, 'index.html'))
+  })
 }
 
 const PORT = process.env.PORT || 3001

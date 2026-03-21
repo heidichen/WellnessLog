@@ -9,6 +9,7 @@ export function AppProvider({ children }) {
   const [activeMemberId, setActiveMemberIdState] = useState(null)
   const [filterMemberId, setFilterMemberId] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
 
   useEffect(() => {
     Promise.all([api.getMembers(), api.getEntries()])
@@ -21,6 +22,41 @@ export function AppProvider({ children }) {
       })
       .finally(() => setLoading(false))
   }, [])
+
+  const flushOfflineQueue = useCallback(async () => {
+    const queue = JSON.parse(localStorage.getItem('offline-queue') || '[]')
+    if (!queue.length) return
+    const failed = []
+    for (const op of queue) {
+      try {
+        if (op.action === 'createEntry') {
+          const real = await api.createEntry(op.data)
+          setEntries(prev => prev.map(e => e.id === op.tempId ? real : e))
+        }
+      } catch {
+        failed.push(op)
+      }
+    }
+    if (failed.length) {
+      localStorage.setItem('offline-queue', JSON.stringify(failed))
+    } else {
+      localStorage.removeItem('offline-queue')
+    }
+  }, [])
+
+  useEffect(() => {
+    const onOnline = async () => {
+      setIsOnline(true)
+      await flushOfflineQueue()
+    }
+    const onOffline = () => setIsOnline(false)
+    window.addEventListener('online', onOnline)
+    window.addEventListener('offline', onOffline)
+    return () => {
+      window.removeEventListener('online', onOnline)
+      window.removeEventListener('offline', onOffline)
+    }
+  }, [flushOfflineQueue])
 
   const setActiveMemberId = useCallback((id) => {
     setActiveMemberIdState(id)
@@ -58,6 +94,25 @@ export function AppProvider({ children }) {
   }, [])
 
   const addEntry = useCallback(async (data) => {
+    if (!navigator.onLine) {
+      const tempId = `offline-${Date.now()}`
+      const tempEntry = {
+        ...data,
+        id: tempId,
+        createdAt: new Date().toISOString(),
+        time: data.time || '',
+        notes: data.notes || '',
+        severity: data.severity || '',
+        sleepQuality: data.sleepQuality || '',
+        sleepDuration: data.sleepDuration || '',
+        photoDataUrl: data.photoDataUrl || null,
+      }
+      setEntries(prev => [tempEntry, ...prev])
+      const queue = JSON.parse(localStorage.getItem('offline-queue') || '[]')
+      queue.push({ action: 'createEntry', data, tempId })
+      localStorage.setItem('offline-queue', JSON.stringify(queue))
+      return tempEntry
+    }
     const newEntry = await api.createEntry(data)
     setEntries(prev => [newEntry, ...prev])
     return newEntry
@@ -91,7 +146,7 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider value={{
-      members, entries, activeMemberId, filterMemberId, setFilterMemberId, loading,
+      members, entries, activeMemberId, filterMemberId, setFilterMemberId, loading, isOnline,
       activeMember: members.find(m => m.id === activeMemberId) || null,
       setActiveMemberId, addMember, updateMember, deleteMember,
       addEntry, updateEntry, deleteEntry, getAutocomplete, reloadData,

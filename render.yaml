@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: warm-fuzzies
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_PATH
+        value: /data/wellness.db
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1

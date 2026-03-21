@@ -93,10 +93,10 @@ export default function CalendarView() {
             <button
               key={day.toISOString()}
               onClick={() => setSelectedDate(selected ? null : day)}
-              className={`min-h-[90px] rounded-card border p-2 text-left transition-all hover:shadow-card ${
+              className={`min-h-[64px] md:min-h-[90px] rounded-card border p-1.5 md:p-2 text-left transition-all active:shadow-card hover:shadow-card ${
                 selected ? 'border-accent shadow-card' :
                 today ? 'border-accent' :
-                'border-border bg-surface hover:border-muted'
+                'border-border bg-surface hover:border-muted active:border-muted'
               } bg-surface`}
             >
               <div className={`text-[12px] font-semibold mb-1 ${today ? 'text-accent' : 'text-muted'}`}>
@@ -109,7 +109,7 @@ export default function CalendarView() {
                       <div key={type} className="w-2 h-2 rounded-full" style={{ backgroundColor: ENTRY_TYPES[type]?.color }} />
                     ))}
                   </div>
-                  <div className="text-[10px] text-muted leading-snug line-clamp-2">
+                  <div className="hidden md:block text-[10px] text-muted leading-snug line-clamp-2">
                     {dayEntries.slice(0, 2).map(e => e.title).join(', ')}
                     {dayEntries.length > 2 && ` +${dayEntries.length - 2}`}
                   </div>

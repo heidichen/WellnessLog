@@ -70,15 +70,15 @@ export default function EntryCard({ entry, hideMember = false }) {
           <span className="font-mono text-[11px] text-muted">
             {entry.time || format(parseISO(entry.date), 'MMM d')}
           </span>
-          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onClick={() => setEditing(true)} className="p-1 text-muted hover:text-ink transition-colors">
-              <Pencil size={12} />
+          <div className="flex gap-0.5 opacity-30 group-hover:opacity-100 transition-opacity">
+            <button onClick={() => setEditing(true)} className="p-2 text-muted hover:text-ink active:text-ink transition-colors rounded-lg hover:bg-surface2 active:bg-surface2">
+              <Pencil size={14} />
             </button>
             <button
               onClick={handleDelete}
-              className={`p-1 transition-colors ${confirmDelete ? 'text-symptom' : 'text-muted hover:text-symptom'}`}
+              className={`p-2 transition-colors rounded-lg hover:bg-surface2 active:bg-surface2 ${confirmDelete ? 'text-symptom' : 'text-muted hover:text-symptom active:text-symptom'}`}
             >
-              <Trash2 size={12} />
+              <Trash2 size={14} />
             </button>
           </div>
         </div>
