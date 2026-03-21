@@ -47,6 +47,14 @@ export default function EntryCard({ entry, hideMember = false }) {
                 {entry.severity}
               </span>
             )}
+            {entry.type === 'sleep' && entry.sleepQuality && (
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{
+                backgroundColor: { poor: '#faeee8', fair: '#f7f3e3', good: '#edf5ed', great: '#eaeff8' }[entry.sleepQuality] || '#eaeff8',
+                color: { poor: '#c07b5a', fair: '#b5a046', good: '#6b9e6b', great: '#7b8fb5' }[entry.sleepQuality] || '#7b8fb5',
+              }}>
+                {entry.sleepQuality}
+              </span>
+            )}
           </div>
           {entry.notes && <p className="text-[12px] text-muted mt-0.5 leading-relaxed">{entry.notes}</p>}
           {!hideMember && member && (

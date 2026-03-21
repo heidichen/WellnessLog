@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useApp } from '../../context/AppContext'
-import { ENTRY_TYPES, SEVERITY_LEVELS, MEMBER_COLORS } from '../../utils/constants'
+import { ENTRY_TYPES, SEVERITY_LEVELS, SLEEP_QUALITY_LEVELS, MEMBER_COLORS } from '../../utils/constants'
 import { analyzeFood, fileToBase64 } from '../../utils/claude'
 import { format } from 'date-fns'
 import AutocompleteInput from './AutocompleteInput'
@@ -18,6 +18,8 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
     title: initialEntry?.title || '',
     notes: initialEntry?.notes || '',
     severity: initialEntry?.severity || 'mild',
+    sleepQuality: initialEntry?.sleepQuality || 'good',
+    sleepDuration: initialEntry?.sleepDuration || '',
     photoDataUrl: initialEntry?.photoDataUrl || null,
   })
   const [showTime, setShowTime] = useState(!!(initialEntry?.time))
@@ -60,11 +62,15 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!form.title.trim()) return
+    const isSleep = form.type === 'sleep'
+    if (!isSleep && !form.title.trim()) return
     setSaving(true)
     try {
-      if (isEdit) await updateEntry(initialEntry.id, form)
-      else await addEntry(form)
+      const data = isSleep
+        ? { ...form, title: form.sleepDuration ? `${form.sleepDuration}h sleep` : 'Sleep' }
+        : form
+      if (isEdit) await updateEntry(initialEntry.id, data)
+      else await addEntry(data)
       onClose()
     } catch {
       setSaving(false)
@@ -159,6 +165,7 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
           </div>
 
           {/* Title */}
+          {form.type !== 'sleep' && (
           <div>
             <label className={labelCls}>
               {form.type === 'food' ? 'What was eaten' : form.type === 'symptom' ? 'Symptom' : form.type === 'medication' ? 'Medication / Supplement' : 'Activity'}
@@ -171,6 +178,7 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
               placeholder="Type or select from history…"
             />
           </div>
+          )}
 
           {/* Photo (food only) */}
           {form.type === 'food' && (
@@ -197,6 +205,55 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
                 </div>
               )}
             </div>
+          )}
+
+          {/* Sleep quality + duration */}
+          {form.type === 'sleep' && (
+            <>
+              <div>
+                <label className={labelCls}>Sleep quality</label>
+                <div className="flex gap-2">
+                  {SLEEP_QUALITY_LEVELS.map(q => {
+                    const active = form.sleepQuality === q
+                    const colors = {
+                      poor:  { bg: '#faeee8', border: '#c07b5a', color: '#c07b5a' },
+                      fair:  { bg: '#f7f3e3', border: '#b5a046', color: '#b5a046' },
+                      good:  { bg: '#edf5ed', border: '#6b9e6b', color: '#6b9e6b' },
+                      great: { bg: '#eaeff8', border: '#7b8fb5', color: '#7b8fb5' },
+                    }
+                    return (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => set('sleepQuality', q)}
+                        className="flex-1 py-2 rounded-lg border-[1.5px] text-[12px] font-semibold capitalize transition-all text-center"
+                        style={active
+                          ? { backgroundColor: colors[q].bg, borderColor: colors[q].border, color: colors[q].color }
+                          : { borderColor: '#e8e2d9', color: '#8a8078', backgroundColor: 'white' }}
+                      >
+                        {q}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Duration (optional)</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    max="24"
+                    step="0.5"
+                    value={form.sleepDuration}
+                    onChange={e => set('sleepDuration', e.target.value)}
+                    placeholder="e.g. 7.5"
+                    className={`${inputCls} w-32`}
+                  />
+                  <span className="text-[13px] text-muted">hours</span>
+                </div>
+              </div>
+            </>
           )}
 
           {/* Severity (symptom only) */}
@@ -247,7 +304,7 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
             </button>
             <button
               type="submit"
-              disabled={!form.title.trim() || saving}
+              disabled={(form.type !== 'sleep' && !form.title.trim()) || saving}
               className="px-6 py-2.5 rounded-lg bg-accent hover:bg-accent-hover disabled:opacity-40 text-white text-[14px] font-semibold transition-all"
             >
               {isEdit ? 'Save changes' : 'Save entry'}

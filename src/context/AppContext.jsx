@@ -77,7 +77,7 @@ export function AppProvider({ children }) {
     if (!query || query.length < 1) return []
     const q = query.toLowerCase()
     const items = entries
-      .filter(e => e.memberId === memberId && e.type === type)
+      .filter(e => e.type === type)
       .flatMap(e => e.title.split(',').map(t => t.trim()).filter(Boolean))
       .filter(t => t.toLowerCase().includes(q) && t.toLowerCase() !== q)
     return [...new Set(items)].slice(0, 8)

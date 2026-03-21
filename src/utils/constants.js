@@ -3,9 +3,11 @@ export const ENTRY_TYPES = {
   symptom:    { label: 'Symptom',    color: '#c07b5a', lightBg: '#faeee8', dot: 'bg-symptom' },
   medication: { label: 'Medication', color: '#9b76b5', lightBg: '#f2ecf8', dot: 'bg-medication' },
   activity:   { label: 'Activity',   color: '#b5a046', lightBg: '#f7f3e3', dot: 'bg-activity' },
+  sleep:      { label: 'Sleep',      color: '#7b8fb5', lightBg: '#eaeff8', dot: 'bg-[#7b8fb5]' },
 }
 
 export const SEVERITY_LEVELS = ['mild', 'moderate', 'severe']
+export const SLEEP_QUALITY_LEVELS = ['poor', 'fair', 'good', 'great']
 
 export const MEMBER_COLORS = [
   { id: 'coral',  label: 'Coral',  hex: '#e07b6b' },

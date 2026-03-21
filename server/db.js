@@ -32,4 +32,12 @@ db.exec(`
   );
 `)
 
+// Migrations
+for (const sql of [
+  'ALTER TABLE entries ADD COLUMN sleep_quality TEXT',
+  'ALTER TABLE entries ADD COLUMN sleep_duration TEXT',
+]) {
+  try { db.exec(sql) } catch { /* column already exists */ }
+}
+
 export default db

@@ -42,16 +42,17 @@ app.post('/api/entries', (req, res) => {
     id: randomUUID(), member_id: b.memberId, type: b.type, date: b.date,
     time: b.time || null, title: b.title, notes: b.notes || null,
     severity: b.severity || null, photo_data_url: b.photoDataUrl || null,
+    sleep_quality: b.sleepQuality || null, sleep_duration: b.sleepDuration || null,
     created_at: new Date().toISOString(),
   }
-  db.prepare('INSERT INTO entries VALUES (@id,@member_id,@type,@date,@time,@title,@notes,@severity,@photo_data_url,@created_at)').run(row)
+  db.prepare('INSERT INTO entries (id,member_id,type,date,time,title,notes,severity,photo_data_url,sleep_quality,sleep_duration,created_at) VALUES (@id,@member_id,@type,@date,@time,@title,@notes,@severity,@photo_data_url,@sleep_quality,@sleep_duration,@created_at)').run(row)
   res.json(toEntry(row))
 })
 
 app.put('/api/entries/:id', (req, res) => {
   const b = req.body
-  db.prepare(`UPDATE entries SET member_id=?,type=?,date=?,time=?,title=?,notes=?,severity=?,photo_data_url=? WHERE id=?`)
-    .run(b.memberId, b.type, b.date, b.time || null, b.title, b.notes || null, b.severity || null, b.photoDataUrl || null, req.params.id)
+  db.prepare(`UPDATE entries SET member_id=?,type=?,date=?,time=?,title=?,notes=?,severity=?,photo_data_url=?,sleep_quality=?,sleep_duration=? WHERE id=?`)
+    .run(b.memberId, b.type, b.date, b.time || null, b.title, b.notes || null, b.severity || null, b.photoDataUrl || null, b.sleepQuality || null, b.sleepDuration || null, req.params.id)
   res.json(toEntry(db.prepare('SELECT * FROM entries WHERE id=?').get(req.params.id)))
 })
 
@@ -80,9 +81,10 @@ app.post('/api/import', (req, res) => {
       db.prepare('INSERT OR REPLACE INTO members VALUES (?,?,?,?,?)').run(m.id, m.name, m.color, m.dob || null, m.createdAt)
     }
     for (const e of entries) {
-      db.prepare('INSERT OR REPLACE INTO entries VALUES (?,?,?,?,?,?,?,?,?,?)').run(
+      db.prepare('INSERT OR REPLACE INTO entries (id,member_id,type,date,time,title,notes,severity,photo_data_url,sleep_quality,sleep_duration,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)').run(
         e.id, e.memberId, e.type, e.date, e.time || null,
-        e.title, e.notes || null, e.severity || null, e.photoDataUrl || null, e.createdAt
+        e.title, e.notes || null, e.severity || null, e.photoDataUrl || null,
+        e.sleepQuality || null, e.sleepDuration || null, e.createdAt
       )
     }
   })()
@@ -100,6 +102,7 @@ function toEntry(r) {
     id: r.id, memberId: r.member_id, type: r.type, date: r.date,
     time: r.time || '', title: r.title, notes: r.notes || '',
     severity: r.severity || '', photoDataUrl: r.photo_data_url || null,
+    sleepQuality: r.sleep_quality || '', sleepDuration: r.sleep_duration || '',
     createdAt: r.created_at,
   }
 }
