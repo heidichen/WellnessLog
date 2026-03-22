@@ -3,7 +3,8 @@ import { useT } from '../../i18n/LanguageContext.jsx'
 import { useApp } from '../../context/AppContext'
 import { MEMBER_COLORS } from '../../utils/constants'
 import { differenceInYears, differenceInMonths, parseISO } from 'date-fns'
-import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, Check, X, Settings } from 'lucide-react'
+import MemberSettingsModal from '../members/MemberSettingsModal'
 
 const labelCls = 'block font-mono text-[11px] font-semibold text-muted uppercase tracking-[0.5px] mb-1.5'
 const inputCls = 'w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-bg text-ink placeholder:text-muted outline-none transition-colors focus:border-accent'
@@ -59,10 +60,35 @@ function MemberForm({ initial = {}, onSave, onCancel }) {
 }
 
 export default function MembersView() {
-  const { members, entries, addMember, updateMember, deleteMember } = useApp()
+  const { members, entries, addMember, updateMember, deleteMember, reloadData } = useApp()
   const { t } = useT()
   const [showAdd, setShowAdd] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  const [settingsMember, setSettingsMember] = useState(null)
+
+  // Join with code state
+  const [joinCode, setJoinCode] = useState('')
+  const [joinError, setJoinError] = useState('')
+  const [joining, setJoining] = useState(false)
+
+  async function handleJoin(e) {
+    e.preventDefault()
+    setJoinError('')
+    setJoining(true)
+    try {
+      const res = await fetch('/api/share/join', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: joinCode }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      await reloadData()
+      setJoinCode('')
+    } catch (err) {
+      setJoinError(err.message)
+    } finally { setJoining(false) }
+  }
 
   function getAge(dob) {
     if (!dob) return null
@@ -87,6 +113,28 @@ export default function MembersView() {
         </button>
       </div>
 
+      {/* Join with code */}
+      <div className="mb-5">
+        <form onSubmit={handleJoin} className="flex gap-2">
+          <input
+            type="text"
+            value={joinCode}
+            onChange={e => setJoinCode(e.target.value.toUpperCase())}
+            placeholder="Enter share code…"
+            className="flex-1 border border-border rounded-lg px-3 py-2 text-sm bg-bg text-ink placeholder:text-muted outline-none focus:border-accent font-mono tracking-wider uppercase"
+            maxLength={8}
+          />
+          <button
+            type="submit"
+            disabled={joining || joinCode.length < 6}
+            className="px-4 py-2 rounded-lg bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-40 transition-all flex-shrink-0"
+          >
+            {joining ? '…' : 'Join'}
+          </button>
+        </form>
+        {joinError && <p className="text-[12px] text-symptom mt-1.5">{joinError}</p>}
+      </div>
+
       {showAdd && (
         <div className="mb-4">
           <MemberForm onSave={async data => { await addMember(data); setShowAdd(false) }} onCancel={() => setShowAdd(false)} />
@@ -106,6 +154,7 @@ export default function MembersView() {
           const color = MEMBER_COLORS.find(c => c.id === m.color)?.hex || '#8a8078'
           const memberEntries = entries.filter(e => e.memberId === m.id)
           const age = getAge(m.dob)
+          const isAdmin = m.role === 'admin'
 
           if (editingId === m.id) {
             return (
@@ -135,17 +184,30 @@ export default function MembersView() {
                       {age && <p className="text-[12px] text-muted">{age}</p>}
                     </div>
                     <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => setEditingId(m.id)} className="p-1.5 text-muted hover:text-ink transition-colors">
-                        <Pencil size={13} />
-                      </button>
-                      <button
-                        onClick={async () => {
-                          if (window.confirm(t('members.deleteConfirm', { name: m.name }))) await deleteMember(m.id)
-                        }}
-                        className="p-1.5 text-muted hover:text-symptom transition-colors"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => setSettingsMember(m)}
+                          className="p-1.5 text-muted hover:text-ink transition-colors"
+                          title="Member settings"
+                        >
+                          <Settings size={13} />
+                        </button>
+                      )}
+                      {isAdmin && (
+                        <button onClick={() => setEditingId(m.id)} className="p-1.5 text-muted hover:text-ink transition-colors">
+                          <Pencil size={13} />
+                        </button>
+                      )}
+                      {isAdmin && (
+                        <button
+                          onClick={async () => {
+                            if (window.confirm(t('members.deleteConfirm', { name: m.name }))) await deleteMember(m.id)
+                          }}
+                          className="p-1.5 text-muted hover:text-symptom transition-colors"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2">
@@ -164,6 +226,15 @@ export default function MembersView() {
           )
         })}
       </div>
+
+      {settingsMember && (
+        <MemberSettingsModal
+          member={settingsMember}
+          onClose={() => setSettingsMember(null)}
+          onUpdate={updateMember}
+          onDelete={deleteMember}
+        />
+      )}
     </div>
   )
 }

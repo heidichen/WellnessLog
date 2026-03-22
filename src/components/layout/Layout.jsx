@@ -1,20 +1,23 @@
 import { useState } from 'react'
 import { useT } from '../../i18n/LanguageContext.jsx'
 import { useApp } from '../../context/AppContext'
+import { useAuth } from '../../context/AuthContext'
 import { MEMBER_COLORS } from '../../utils/constants'
 import { exportData, importData } from '../../utils/api'
 import EntryModal from '../entries/EntryModal'
-import { Calendar, List, TrendingUp, Users, Plus, Download, Upload, WifiOff } from 'lucide-react'
+import { Calendar, List, TrendingUp, Users, Plus, Download, Upload, WifiOff, User, X } from 'lucide-react'
 
 const NAV_IDS = [
   { id: 'calendar', Icon: Calendar },
   { id: 'log',      Icon: List },
   { id: 'trends',   Icon: TrendingUp },
   { id: 'members',  Icon: Users },
+  { id: 'profile',  Icon: User },
 ]
 
 export default function Layout({ view, setView, children }) {
   const { members, activeMemberId, setActiveMemberId, filterMemberId, setFilterMemberId, reloadData, isOnline } = useApp()
+  const { user, guestBannerDismissed, dismissGuestBanner } = useAuth()
   const { t, lang, toggleLang } = useT()
   const [showEntryModal, setShowEntryModal] = useState(false)
   const [importError, setImportError] = useState('')
@@ -132,6 +135,18 @@ export default function Layout({ view, setView, children }) {
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex items-center justify-center gap-2 text-[13px] text-amber-700 font-medium">
           <WifiOff size={14} />
           {t('header.offlineBanner')}
+        </div>
+      )}
+
+      {/* Guest banner */}
+      {user?.isGuest && !guestBannerDismissed && (
+        <div className="bg-[#fdf3ea] border-b border-[#f0d9c4] px-4 py-2.5 flex items-center justify-between gap-3">
+          <p className="text-[12px] text-[#8a6040] flex-1">
+            You're using WellnessLog as a guest.{' '}
+            <button onClick={() => setView('profile')} className="underline font-medium">Create an account</button>
+            {' '}to sync across devices and share with family.
+          </p>
+          <button onClick={dismissGuestBanner} className="text-[#b0a898] flex-shrink-0"><X size={14} /></button>
         </div>
       )}
 

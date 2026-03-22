@@ -4,7 +4,8 @@
     "calendar": "Calendar",
     "trends": "Trends",
     "family": "Family",
-    "members": "Family"
+    "members": "Family",
+    "profile": "Account"
   },
   "header": {
     "addEntry": "Add entry",

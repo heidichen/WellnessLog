@@ -1,5 +1,6 @@
 async function req(path, options = {}) {
   const res = await fetch('/api' + path, {
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     ...options,
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,

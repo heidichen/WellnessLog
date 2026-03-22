@@ -4,10 +4,6 @@ import { dirname, join } from 'path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-// Log all env var keys (no values) so we can see exactly what Railway injects
-console.log('[db] All env var keys:', Object.keys(process.env).sort())
-
-// Railway may expose the connection string under several names
 const pgUrl = process.env.DATABASE_URL
   || process.env.DATABASE_PRIVATE_URL
   || process.env.POSTGRES_URL
@@ -33,45 +29,83 @@ const db = knex(usingPostgres ? {
 
 export async function initDb() {
   console.log('[db] Running initDb...')
-  // Members table
-  const hasMembersTable = await db.schema.hasTable('members')
-  console.log('[db] members table exists:', hasMembersTable)
-  if (!hasMembersTable) {
-    await db.schema.createTable('members', t => {
+
+  // Users table
+  if (!await db.schema.hasTable('users')) {
+    await db.schema.createTable('users', t => {
       t.string('id').primary()
-      t.string('name').notNullable()
-      t.string('color').notNullable()
-      t.string('dob')
+      t.string('email').unique().nullable()
+      t.string('password_hash').nullable()
+      t.boolean('is_guest').notNullable().defaultTo(false)
       t.string('created_at').notNullable()
     })
   }
 
-  console.log('[db] members table created')
+  // Members table
+  if (!await db.schema.hasTable('members')) {
+    await db.schema.createTable('members', t => {
+      t.string('id').primary()
+      t.string('created_by').nullable().references('id').inTable('users').onDelete('SET NULL')
+      t.string('name').notNullable()
+      t.string('color').notNullable()
+      t.string('dob').nullable()
+      t.string('created_at').notNullable()
+    })
+  }
+
+  // member_access table
+  if (!await db.schema.hasTable('member_access')) {
+    await db.schema.createTable('member_access', t => {
+      t.string('id').primary()
+      t.string('member_id').notNullable().references('id').inTable('members').onDelete('CASCADE')
+      t.string('user_id').nullable().references('id').inTable('users').onDelete('CASCADE')
+      t.string('role').nullable() // admin | editor | viewer
+      t.string('share_code').nullable().unique()
+      t.string('share_code_access').nullable() // editor | viewer
+      t.string('created_at').notNullable()
+    })
+  }
+
   // Entries table
   if (!await db.schema.hasTable('entries')) {
     await db.schema.createTable('entries', t => {
       t.string('id').primary()
       t.string('member_id').notNullable().references('id').inTable('members').onDelete('CASCADE')
+      t.string('created_by').nullable().references('id').inTable('users').onDelete('SET NULL')
       t.string('type').notNullable()
       t.string('date').notNullable()
-      t.string('time')
+      t.string('time').nullable()
       t.string('title').notNullable()
-      t.text('notes')
-      t.string('severity')
-      t.text('photo_data_url')
+      t.text('notes').nullable()
+      t.string('severity').nullable()
+      t.text('photo_data_url').nullable()
+      t.string('sleep_quality').nullable()
+      t.string('sleep_duration').nullable()
       t.string('created_at').notNullable()
-      t.string('sleep_quality')
-      t.string('sleep_duration')
     })
   }
 
-  console.log('[db] entries table ready')
-  // Migrations: add columns if missing (for existing databases)
-  for (const col of ['sleep_quality', 'sleep_duration']) {
-    if (!await db.schema.hasColumn('entries', col)) {
-      await db.schema.table('entries', t => t.string(col))
+  // Migrations for existing databases
+  const memberMigrations = [
+    { table: 'members', col: 'created_by', type: 'string' },
+  ]
+  for (const { table, col, type } of memberMigrations) {
+    if (!await db.schema.hasColumn(table, col)) {
+      await db.schema.table(table, t => t[type](col).nullable())
     }
   }
+
+  const entryMigrations = [
+    { col: 'sleep_quality', type: 'string' },
+    { col: 'sleep_duration', type: 'string' },
+    { col: 'created_by', type: 'string' },
+  ]
+  for (const { col, type } of entryMigrations) {
+    if (!await db.schema.hasColumn('entries', col)) {
+      await db.schema.table('entries', t => t[type](col).nullable())
+    }
+  }
+
   console.log('[db] initDb complete')
 }
 
