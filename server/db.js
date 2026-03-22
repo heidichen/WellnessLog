@@ -106,6 +106,26 @@ export async function initDb() {
     }
   }
 
+  // Share bundles (multi-member share codes)
+  if (!await db.schema.hasTable('share_bundles')) {
+    await db.schema.createTable('share_bundles', t => {
+      t.string('id').primary()
+      t.string('share_code').notNullable().unique()
+      t.string('created_by').notNullable().references('id').inTable('users').onDelete('CASCADE')
+      t.string('access_level').notNullable() // editor | viewer
+      t.string('used_by').nullable().references('id').inTable('users').onDelete('SET NULL')
+      t.string('created_at').notNullable()
+    })
+  }
+
+  if (!await db.schema.hasTable('share_bundle_members')) {
+    await db.schema.createTable('share_bundle_members', t => {
+      t.string('id').primary()
+      t.string('bundle_id').notNullable().references('id').inTable('share_bundles').onDelete('CASCADE')
+      t.string('member_id').notNullable().references('id').inTable('members').onDelete('CASCADE')
+    })
+  }
+
   console.log('[db] initDb complete')
 }
 

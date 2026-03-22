@@ -3,7 +3,7 @@ import { useT } from '../../i18n/LanguageContext.jsx'
 import { useApp } from '../../context/AppContext'
 import { MEMBER_COLORS } from '../../utils/constants'
 import { differenceInYears, differenceInMonths, parseISO } from 'date-fns'
-import { Plus, Pencil, Trash2, Check, X, Settings } from 'lucide-react'
+import { Plus, Pencil, Trash2, Check, X, Settings, Share2, Copy } from 'lucide-react'
 import MemberSettingsModal from '../members/MemberSettingsModal'
 
 const labelCls = 'block font-mono text-[11px] font-semibold text-muted uppercase tracking-[0.5px] mb-1.5'
@@ -66,10 +66,20 @@ export default function MembersView() {
   const [editingId, setEditingId] = useState(null)
   const [settingsMember, setSettingsMember] = useState(null)
 
-  // Join with code state
+  // Join with code
   const [joinCode, setJoinCode] = useState('')
   const [joinError, setJoinError] = useState('')
   const [joining, setJoining] = useState(false)
+
+  // Multi-select share
+  const [shareMode, setShareMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState([])
+  const [shareAccessLevel, setShareAccessLevel] = useState('editor')
+  const [generatedCode, setGeneratedCode] = useState(null) // { code, accessLevel, members }
+  const [generating, setGenerating] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const adminMembers = members.filter(m => m.role === 'admin')
 
   async function handleJoin(e) {
     e.preventDefault()
@@ -90,6 +100,41 @@ export default function MembersView() {
     } finally { setJoining(false) }
   }
 
+  function toggleSelect(id) {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+
+  function exitShareMode() {
+    setShareMode(false)
+    setSelectedIds([])
+    setGeneratedCode(null)
+    setCopied(false)
+  }
+
+  async function handleGenerateBundle() {
+    if (selectedIds.length === 0) return
+    setGenerating(true)
+    try {
+      const res = await fetch('/api/share/bundle', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberIds: selectedIds, accessLevel: shareAccessLevel }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setGeneratedCode(data)
+    } catch (err) {
+      alert(err.message)
+    } finally { setGenerating(false) }
+  }
+
+  function copyCode() {
+    if (!generatedCode) return
+    navigator.clipboard?.writeText(generatedCode.code)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   function getAge(dob) {
     if (!dob) return null
     const birth = parseISO(dob)
@@ -105,35 +150,106 @@ export default function MembersView() {
     <div>
       <div className="flex items-center justify-between mb-5">
         <h2 className="font-display text-[22px] font-medium text-ink">{t('members.title')}</h2>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-1.5 bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-full text-[13px] font-semibold transition-all"
-        >
-          <Plus size={13} /> {t('members.addMember')}
-        </button>
+        <div className="flex items-center gap-2">
+          {!shareMode && adminMembers.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShareMode(true)}
+              className="flex items-center gap-1.5 border border-border text-muted px-3 py-2 rounded-full text-[13px] font-medium hover:bg-surface2 transition-all"
+            >
+              <Share2 size={13} /> Share
+            </button>
+          )}
+          {shareMode ? (
+            <button type="button" onClick={exitShareMode} className="flex items-center gap-1.5 border border-border text-muted px-3 py-2 rounded-full text-[13px] font-medium hover:bg-surface2 transition-all">
+              <X size={13} /> Cancel
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowAdd(true)}
+              className="flex items-center gap-1.5 bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-full text-[13px] font-semibold transition-all"
+            >
+              <Plus size={13} /> {t('members.addMember')}
+            </button>
+          )}
+        </div>
       </div>
 
+      {/* Share mode panel */}
+      {shareMode && (
+        <div className="mb-5 bg-surface border border-border rounded-card p-4 space-y-4">
+          {!generatedCode ? (
+            <>
+              <p className="text-[13px] text-muted">Select profiles below to share, then choose an access level.</p>
+              <div>
+                <p className={labelCls}>Access level</p>
+                <div className="flex gap-2">
+                  {['editor', 'viewer'].map(level => (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => setShareAccessLevel(level)}
+                      className="px-4 py-2 rounded-lg border-[1.5px] text-[13px] font-medium capitalize transition-all"
+                      style={shareAccessLevel === level
+                        ? { backgroundColor: '#f0ebe3', borderColor: '#c8956c', color: '#c8956c' }
+                        : { borderColor: '#e8e2d9', color: '#8a8078', backgroundColor: 'white' }}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleGenerateBundle}
+                disabled={selectedIds.length === 0 || generating}
+                className="w-full py-2.5 rounded-lg bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-40 transition-all"
+              >
+                {generating ? '…' : `Generate code for ${selectedIds.length} profile${selectedIds.length !== 1 ? 's' : ''}`}
+              </button>
+            </>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-[13px] text-[#6b9e6b] font-medium">Code generated — share it with the recipient.</p>
+              <div className="flex items-center justify-between bg-surface2 rounded-lg px-4 py-3">
+                <span className="font-mono text-[22px] font-bold tracking-[0.2em] text-ink">{generatedCode.code}</span>
+                <button type="button" onClick={copyCode} className="p-2 rounded-lg hover:bg-surface text-muted">
+                  {copied ? <Check size={16} className="text-[#6b9e6b]" /> : <Copy size={16} />}
+                </button>
+              </div>
+              <p className="text-[12px] text-muted">
+                Grants <strong className="capitalize">{generatedCode.accessLevel}</strong> access to:{' '}
+                {generatedCode.members.map(m => m.name).join(', ')}
+              </p>
+              <button type="button" onClick={exitShareMode} className="text-[12px] text-muted underline">Done</button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Join with code */}
-      <div className="mb-5">
-        <form onSubmit={handleJoin} className="flex gap-2">
-          <input
-            type="text"
-            value={joinCode}
-            onChange={e => setJoinCode(e.target.value.toUpperCase())}
-            placeholder="Enter share code…"
-            className="flex-1 border border-border rounded-lg px-3 py-2 text-sm bg-bg text-ink placeholder:text-muted outline-none focus:border-accent font-mono tracking-wider uppercase"
-            maxLength={8}
-          />
-          <button
-            type="submit"
-            disabled={joining || joinCode.length < 6}
-            className="px-4 py-2 rounded-lg bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-40 transition-all flex-shrink-0"
-          >
-            {joining ? '…' : 'Join'}
-          </button>
-        </form>
-        {joinError && <p className="text-[12px] text-symptom mt-1.5">{joinError}</p>}
-      </div>
+      {!shareMode && (
+        <div className="mb-5">
+          <form onSubmit={handleJoin} className="flex gap-2">
+            <input
+              type="text"
+              value={joinCode}
+              onChange={e => setJoinCode(e.target.value.toUpperCase())}
+              placeholder="Enter share code…"
+              className="flex-1 border border-border rounded-lg px-3 py-2 text-sm bg-bg text-ink placeholder:text-muted outline-none focus:border-accent font-mono tracking-wider uppercase"
+              maxLength={8}
+            />
+            <button
+              type="submit"
+              disabled={joining || joinCode.length < 6}
+              className="px-4 py-2 rounded-lg bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-40 transition-all flex-shrink-0"
+            >
+              {joining ? '…' : 'Join'}
+            </button>
+          </form>
+          {joinError && <p className="text-[12px] text-symptom mt-1.5">{joinError}</p>}
+        </div>
+      )}
 
       {showAdd && (
         <div className="mb-4">
@@ -155,6 +271,8 @@ export default function MembersView() {
           const memberEntries = entries.filter(e => e.memberId === m.id)
           const age = getAge(m.dob)
           const isAdmin = m.role === 'admin'
+          const isSelectable = shareMode && isAdmin
+          const isSelected = selectedIds.includes(m.id)
 
           if (editingId === m.id) {
             return (
@@ -169,8 +287,17 @@ export default function MembersView() {
           }
 
           return (
-            <div key={m.id} className="bg-surface border border-border rounded-card p-5 transition-all hover:shadow-card group">
+            <div
+              key={m.id}
+              onClick={isSelectable ? () => toggleSelect(m.id) : undefined}
+              className={`bg-surface border rounded-card p-5 transition-all group ${isSelectable ? 'cursor-pointer' : ''} ${isSelected ? 'border-accent shadow-card' : 'border-border hover:shadow-card'} ${shareMode && !isAdmin ? 'opacity-40' : ''}`}
+            >
               <div className="flex items-start gap-4">
+                {isSelectable && (
+                  <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 mt-0.5 border-2 transition-all ${isSelected ? 'bg-accent border-accent' : 'border-border'}`}>
+                    {isSelected && <Check size={12} className="text-white" />}
+                  </div>
+                )}
                 <div
                   className="w-11 h-11 rounded-full flex items-center justify-center text-white text-[16px] font-semibold flex-shrink-0"
                   style={{ backgroundColor: color }}
@@ -183,32 +310,30 @@ export default function MembersView() {
                       <p className="font-display text-[16px] font-medium text-ink">{m.name}</p>
                       {age && <p className="text-[12px] text-muted">{age}</p>}
                     </div>
-                    <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {isAdmin && (
-                        <button
-                          onClick={() => setSettingsMember(m)}
-                          className="p-1.5 text-muted hover:text-ink transition-colors"
-                          title="Member settings"
-                        >
-                          <Settings size={13} />
-                        </button>
-                      )}
-                      {isAdmin && (
-                        <button onClick={() => setEditingId(m.id)} className="p-1.5 text-muted hover:text-ink transition-colors">
-                          <Pencil size={13} />
-                        </button>
-                      )}
-                      {isAdmin && (
-                        <button
-                          onClick={async () => {
-                            if (window.confirm(t('members.deleteConfirm', { name: m.name }))) await deleteMember(m.id)
-                          }}
-                          className="p-1.5 text-muted hover:text-symptom transition-colors"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      )}
-                    </div>
+                    {!shareMode && (
+                      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {isAdmin && (
+                          <button onClick={() => setSettingsMember(m)} className="p-1.5 text-muted hover:text-ink transition-colors" title="Member settings">
+                            <Settings size={13} />
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <button onClick={() => setEditingId(m.id)} className="p-1.5 text-muted hover:text-ink transition-colors">
+                            <Pencil size={13} />
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <button
+                            onClick={async () => {
+                              if (window.confirm(t('members.deleteConfirm', { name: m.name }))) await deleteMember(m.id)
+                            }}
+                            className="p-1.5 text-muted hover:text-symptom transition-colors"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <div className="bg-surface2 rounded-lg p-2.5 text-center">

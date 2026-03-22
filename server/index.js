@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { existsSync } from 'fs'
 import db, { initDb } from './db.js'
-import { requireAuth } from './auth.js'
+import { requireAuth, assertMemberAccess } from './auth.js'
 import authRouter from './routes/auth.js'
 import membersRouter from './routes/members.js'
 import entriesRouter from './routes/entries.js'
@@ -25,28 +25,81 @@ app.use('/api/auth', authRouter)
 app.use('/api/members', requireAuth, membersRouter)
 app.use('/api/entries', requireAuth, entriesRouter)
 
-// Share join endpoint (inline, requires auth)
+function toMember(r) {
+  return { id: r.id, name: r.name, color: r.color, dob: r.dob || '', createdAt: r.created_at, createdBy: r.created_by }
+}
+
+function generateShareCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  let code = ''
+  for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)]
+  return code
+}
+
+// POST /api/share/bundle — create a multi-member share code (admin of all selected members required)
+app.post('/api/share/bundle', requireAuth, async (req, res) => {
+  const { memberIds, accessLevel } = req.body
+  if (!Array.isArray(memberIds) || memberIds.length === 0) return res.status(400).json({ error: 'At least one member required' })
+  if (!['editor', 'viewer'].includes(accessLevel)) return res.status(400).json({ error: 'Invalid access level' })
+
+  const userId = req.user.userId
+  for (const mid of memberIds) {
+    const ok = await assertMemberAccess(db, mid, userId, 'admin')
+    if (!ok) return res.status(403).json({ error: 'You must be admin of all selected members' })
+  }
+
+  let code
+  for (let i = 0; i < 10; i++) {
+    const candidate = generateShareCode()
+    const existing = await db('share_bundles').where({ share_code: candidate }).first()
+    if (!existing) { code = candidate; break }
+  }
+  if (!code) return res.status(500).json({ error: 'Failed to generate unique code' })
+
+  const bundleId = randomUUID()
+  const now = new Date().toISOString()
+  await db('share_bundles').insert({ id: bundleId, share_code: code, created_by: userId, access_level: accessLevel, used_by: null, created_at: now })
+  await db('share_bundle_members').insert(memberIds.map(mid => ({ id: randomUUID(), bundle_id: bundleId, member_id: mid })))
+
+  const members = await db('members').whereIn('id', memberIds)
+  res.json({ code, accessLevel, members: members.map(toMember) })
+})
+
+// POST /api/share/join — join via single-member or bundle code
 app.post('/api/share/join', requireAuth, async (req, res) => {
   const { code } = req.body
   if (!code) return res.status(400).json({ error: 'Code required' })
-  const invite = await db('member_access').where({ share_code: code.toUpperCase().trim() }).whereNull('user_id').first()
+  const normalized = code.toUpperCase().trim()
+  const userId = req.user.userId
+
+  // Try bundle code first
+  const bundle = await db('share_bundles').where({ share_code: normalized }).whereNull('used_by').first()
+  if (bundle) {
+    if (bundle.created_by === userId) return res.status(409).json({ error: 'You cannot join your own share code' })
+    const bundleMembers = await db('share_bundle_members').where({ bundle_id: bundle.id })
+    const granted = []
+    for (const bm of bundleMembers) {
+      const existing = await db('member_access').where({ member_id: bm.member_id, user_id: userId }).whereNotNull('role').first()
+      if (!existing) {
+        await db('member_access').insert({ id: randomUUID(), member_id: bm.member_id, user_id: userId, role: bundle.access_level, share_code: null, share_code_access: null, created_at: new Date().toISOString() })
+        const m = await db('members').where({ id: bm.member_id }).first()
+        granted.push({ ...toMember(m), role: bundle.access_level })
+      }
+    }
+    await db('share_bundles').where({ id: bundle.id }).update({ used_by: userId })
+    return res.json({ members: granted })
+  }
+
+  // Try single-member code
+  const invite = await db('member_access').where({ share_code: normalized }).whereNull('user_id').first()
   if (!invite) return res.status(404).json({ error: 'Invalid or already used code' })
 
-  const userId = req.user.userId
-  // Check if user already has access
   const existing = await db('member_access').where({ member_id: invite.member_id, user_id: userId }).whereNotNull('role').first()
   if (existing) return res.status(409).json({ error: 'You already have access to this member' })
 
-  // Grant access
   await db('member_access').where({ id: invite.id }).update({ user_id: userId, role: invite.share_code_access })
   const member = await db('members').where({ id: invite.member_id }).first()
-
-  function toMember(r) {
-    return { id: r.id, name: r.name, color: r.color, dob: r.dob || '', createdAt: r.created_at, createdBy: r.created_by }
-  }
-
-  const role = invite.share_code_access
-  res.json({ ...toMember(member), role })
+  res.json({ members: [{ ...toMember(member), role: invite.share_code_access }] })
 })
 
 // Export / Import
