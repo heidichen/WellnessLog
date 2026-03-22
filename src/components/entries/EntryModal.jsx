@@ -12,8 +12,12 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
   const { t } = useT()
   const isEdit = !!initialEntry
 
+  const defaultMemberIds = initialEntry
+    ? [initialEntry.memberId]
+    : [activeMemberId || members[0]?.id].filter(Boolean)
+
+  const [memberIds, setMemberIds] = useState(defaultMemberIds)
   const [form, setForm] = useState({
-    memberId: initialEntry?.memberId || activeMemberId || members[0]?.id || '',
     type: initialEntry?.type || 'food',
     date: initialEntry?.date || defaultDate || format(new Date(), 'yyyy-MM-dd'),
     time: initialEntry?.time ?? '',
@@ -32,7 +36,7 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
 
   const titleParts = form.title.split(',')
   const activeToken = titleParts[titleParts.length - 1].trimStart()
-  const suggestions = getAutocomplete(form.memberId, form.type, activeToken)
+  const suggestions = getAutocomplete(memberIds[0], form.type, activeToken)
 
   function handleTitleSelect(suggestion) {
     const parts = form.title.split(',')
@@ -62,20 +66,34 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
     e.target.value = ''
   }
 
+  function toggleMember(id) {
+    setMemberIds(prev =>
+      prev.includes(id)
+        ? prev.length > 1 ? prev.filter(x => x !== id) : prev  // keep at least one
+        : [...prev, id]
+    )
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     const isSleep = form.type === 'sleep'
     const isNote = form.type === 'note'
     if (!isSleep && !isNote && !form.title.trim()) return
+    if (memberIds.length === 0) return
     setSaving(true)
     try {
-      const data = isSleep
+      const base = isSleep
         ? { ...form, title: form.sleepDuration ? `${form.sleepDuration}h sleep` : 'Sleep' }
         : isNote
         ? { ...form, title: form.title.trim() || 'Note' }
         : form
-      if (isEdit) await updateEntry(initialEntry.id, data)
-      else await addEntry(data)
+      if (isEdit) {
+        await updateEntry(initialEntry.id, { ...base, memberId: memberIds[0] })
+      } else {
+        for (const memberId of memberIds) {
+          await addEntry({ ...base, memberId })
+        }
+      }
       onClose()
     } catch {
       setSaving(false)
@@ -105,12 +123,12 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
               <div className="flex gap-2 flex-wrap">
                 {members.map(m => {
                   const color = MEMBER_COLORS.find(c => c.id === m.color)?.hex || '#8a8078'
-                  const active = form.memberId === m.id
+                  const active = memberIds.includes(m.id)
                   return (
                     <button
                       key={m.id}
                       type="button"
-                      onClick={() => set('memberId', m.id)}
+                      onClick={() => isEdit ? setMemberIds([m.id]) : toggleMember(m.id)}
                       className="px-3 py-1.5 rounded-full text-[13px] font-medium border-[1.5px] transition-all"
                       style={active
                         ? { backgroundColor: color, borderColor: color, color: 'white' }
