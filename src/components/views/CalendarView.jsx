@@ -140,7 +140,7 @@ export default function CalendarView() {
       {selectedDate && (
         <div
           className="fixed inset-0 z-40 flex items-center justify-center p-4"
-          style={{ background: 'rgba(26,23,20,0.4)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
+          style={{ background: 'rgba(26,23,20,0.4)', backdropFilter: 'blur(4px)' }}
           onClick={e => { if (e.target === e.currentTarget) setSelectedDate(null) }}
         >
           <div className="bg-surface rounded-2xl w-full max-w-lg shadow-lg flex flex-col" style={{ maxHeight: '80vh' }}>

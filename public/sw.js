@@ -1,5 +1,5 @@
-const CACHE = 'warm-fuzzies-v2'
-const API_CACHE = 'warm-fuzzies-api-v2'
+const CACHE = 'warm-fuzzies-v1'
+const API_CACHE = 'warm-fuzzies-api-v1'
 
 // On install: cache the app shell (index.html)
 self.addEventListener('install', event => {
@@ -25,7 +25,7 @@ self.addEventListener('fetch', event => {
   const { request } = event
   const url = new URL(request.url)
 
-  // Only handle http(s) requests from same origin or API
+  // Only handle http(s) requests
   if (!url.protocol.startsWith('http')) return
 
   // API write requests — pass through, don't cache
@@ -42,36 +42,12 @@ self.addEventListener('fetch', event => {
           }
           return response
         })
-        .catch(async () => {
-          const cached = await caches.match(request)
-          return cached || new Response(JSON.stringify([]), {
-            headers: { 'Content-Type': 'application/json' },
-          })
-        })
+        .catch(() => caches.match(request))
     )
     return
   }
 
-  // Navigation requests — network first, fall back to cached index.html
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then(response => {
-          if (response.ok) {
-            const clone = response.clone()
-            caches.open(CACHE).then(cache => cache.put(request, clone))
-          }
-          return response
-        })
-        .catch(async () => {
-          const cached = await caches.match(request) || await caches.match('/')
-          return cached || fetch(request)
-        })
-    )
-    return
-  }
-
-  // Static assets — cache first, network fallback
+  // App shell and static assets — cache first, network fallback
   event.respondWith(
     caches.match(request).then(cached => {
       if (cached) return cached
@@ -84,8 +60,8 @@ self.addEventListener('fetch', event => {
           return response
         })
         .catch(() => {
-          // Return empty 204 rather than undefined to avoid Safari errors
-          return new Response('', { status: 204 })
+          // SPA fallback: return cached index.html for navigation requests
+          if (request.mode === 'navigate') return caches.match('/')
         })
     })
   )

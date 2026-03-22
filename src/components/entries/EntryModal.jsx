@@ -86,7 +86,7 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
   const inputCls = 'w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-bg text-ink placeholder:text-muted outline-none transition-colors focus:border-accent'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,23,20,0.4)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,23,20,0.4)', backdropFilter: 'blur(4px)' }}>
       <div className="bg-surface rounded-2xl shadow-lg w-full max-w-[480px] max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-7 pt-7 pb-5">
           <h2 className="font-display text-[20px] font-medium text-ink">
