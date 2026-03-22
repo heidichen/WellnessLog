@@ -4,7 +4,14 @@ import { dirname, join } from 'path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const db = knex(process.env.DATABASE_URL ? {
+const usingPostgres = !!process.env.DATABASE_URL
+console.log('[db] DATABASE_URL present:', usingPostgres)
+if (usingPostgres) {
+  // Log first 30 chars so we can confirm the value is set without leaking credentials
+  console.log('[db] DATABASE_URL prefix:', process.env.DATABASE_URL.slice(0, 30))
+}
+
+const db = knex(usingPostgres ? {
   client: 'pg',
   connection: {
     connectionString: process.env.DATABASE_URL,
@@ -17,8 +24,11 @@ const db = knex(process.env.DATABASE_URL ? {
 })
 
 export async function initDb() {
+  console.log('[db] Running initDb...')
   // Members table
-  if (!await db.schema.hasTable('members')) {
+  const hasMembersTable = await db.schema.hasTable('members')
+  console.log('[db] members table exists:', hasMembersTable)
+  if (!hasMembersTable) {
     await db.schema.createTable('members', t => {
       t.string('id').primary()
       t.string('name').notNullable()
@@ -28,6 +38,7 @@ export async function initDb() {
     })
   }
 
+  console.log('[db] members table created')
   // Entries table
   if (!await db.schema.hasTable('entries')) {
     await db.schema.createTable('entries', t => {
@@ -46,12 +57,14 @@ export async function initDb() {
     })
   }
 
+  console.log('[db] entries table ready')
   // Migrations: add columns if missing (for existing databases)
   for (const col of ['sleep_quality', 'sleep_duration']) {
     if (!await db.schema.hasColumn('entries', col)) {
       await db.schema.table('entries', t => t.string(col))
     }
   }
+  console.log('[db] initDb complete')
 }
 
 export default db
