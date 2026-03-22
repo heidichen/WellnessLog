@@ -1,15 +1,17 @@
 services:
   - type: web
-    name: warm-fuzzies
+    name: wellnesslog
     env: node
     buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DB_PATH
-        value: /data/wellness.db
-    disk:
-      name: data
-      mountPath: /data
-      sizeGB: 1
+      - key: DATABASE_URL
+        fromDatabase:
+          name: wellnesslog-db
+          property: connectionString
+
+databases:
+  - name: wellnesslog-db
+    plan: free

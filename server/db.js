@@ -1,44 +1,57 @@
-import Database from 'better-sqlite3'
+import knex from 'knex'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const dbPath = process.env.DB_PATH || join(__dirname, '../wellness.db')
-const db = new Database(dbPath)
 
-db.pragma('journal_mode = WAL')
-db.pragma('foreign_keys = ON')
+const db = knex(process.env.DATABASE_URL ? {
+  client: 'pg',
+  connection: {
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+  },
+} : {
+  client: 'better-sqlite3',
+  connection: { filename: process.env.DB_PATH || join(__dirname, '../wellness.db') },
+  useNullAsDefault: true,
+})
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS members (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    color TEXT NOT NULL,
-    dob TEXT,
-    created_at TEXT NOT NULL
-  );
+export async function initDb() {
+  // Members table
+  if (!await db.schema.hasTable('members')) {
+    await db.schema.createTable('members', t => {
+      t.string('id').primary()
+      t.string('name').notNullable()
+      t.string('color').notNullable()
+      t.string('dob')
+      t.string('created_at').notNullable()
+    })
+  }
 
-  CREATE TABLE IF NOT EXISTS entries (
-    id TEXT PRIMARY KEY,
-    member_id TEXT NOT NULL,
-    type TEXT NOT NULL,
-    date TEXT NOT NULL,
-    time TEXT,
-    title TEXT NOT NULL,
-    notes TEXT,
-    severity TEXT,
-    photo_data_url TEXT,
-    created_at TEXT NOT NULL,
-    FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
-  );
-`)
+  // Entries table
+  if (!await db.schema.hasTable('entries')) {
+    await db.schema.createTable('entries', t => {
+      t.string('id').primary()
+      t.string('member_id').notNullable().references('id').inTable('members').onDelete('CASCADE')
+      t.string('type').notNullable()
+      t.string('date').notNullable()
+      t.string('time')
+      t.string('title').notNullable()
+      t.text('notes')
+      t.string('severity')
+      t.text('photo_data_url')
+      t.string('created_at').notNullable()
+      t.string('sleep_quality')
+      t.string('sleep_duration')
+    })
+  }
 
-// Migrations
-for (const sql of [
-  'ALTER TABLE entries ADD COLUMN sleep_quality TEXT',
-  'ALTER TABLE entries ADD COLUMN sleep_duration TEXT',
-]) {
-  try { db.exec(sql) } catch { /* column already exists */ }
+  // Migrations: add columns if missing (for existing databases)
+  for (const col of ['sleep_quality', 'sleep_duration']) {
+    if (!await db.schema.hasColumn('entries', col)) {
+      await db.schema.table('entries', t => t.string(col))
+    }
+  }
 }
 
 export default db
