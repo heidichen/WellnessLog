@@ -142,6 +142,11 @@ export function AppProvider({ children }) {
     const [m, e] = await Promise.all([api.getMembers(), api.getEntries()])
     setMembers(m)
     setEntries(e)
+    setActiveMemberIdState(prev => {
+      const valid = m.find(x => x.id === prev) ? prev : m[0]?.id || null
+      saveActiveMemberId(valid)
+      return valid
+    })
   }, [])
 
   return (
