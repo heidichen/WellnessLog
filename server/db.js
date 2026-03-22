@@ -4,17 +4,28 @@ import { dirname, join } from 'path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const usingPostgres = !!process.env.DATABASE_URL
-console.log('[db] DATABASE_URL present:', usingPostgres)
+// Log all DB-related env vars so we can see exactly what Railway injects
+const dbEnvKeys = Object.keys(process.env).filter(k =>
+  k.includes('DATABASE') || k.includes('POSTGRES') || k.includes('PG') || k === 'NODE_ENV'
+)
+console.log('[db] DB-related env vars present:', dbEnvKeys)
+
+// Railway may expose the connection string under several names
+const pgUrl = process.env.DATABASE_URL
+  || process.env.DATABASE_PRIVATE_URL
+  || process.env.POSTGRES_URL
+  || process.env.POSTGRESQL_URL
+
+const usingPostgres = !!pgUrl
+console.log('[db] Resolved postgres URL present:', usingPostgres)
 if (usingPostgres) {
-  // Log first 30 chars so we can confirm the value is set without leaking credentials
-  console.log('[db] DATABASE_URL prefix:', process.env.DATABASE_URL.slice(0, 30))
+  console.log('[db] Postgres URL prefix:', pgUrl.slice(0, 30))
 }
 
 const db = knex(usingPostgres ? {
   client: 'pg',
   connection: {
-    connectionString: process.env.DATABASE_URL,
+    connectionString: pgUrl,
     ssl: { rejectUnauthorized: false },
   },
 } : {
