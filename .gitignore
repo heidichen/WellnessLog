@@ -4,3 +4,4 @@ dist/
 wellness.db
 wellness.db-shm
 wellness.db-wal
+.env
