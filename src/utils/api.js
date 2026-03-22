@@ -5,7 +5,10 @@ async function req(path, options = {}) {
     ...options,
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
   })
-  if (!res.ok) throw new Error(`API ${res.status}`)
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || `API ${res.status}`)
+  }
   return res.json()
 }
 

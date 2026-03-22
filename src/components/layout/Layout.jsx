@@ -34,12 +34,16 @@ export default function Layout({ view, setView, children }) {
   async function handleImport(e) {
     const file = e.target.files[0]
     if (!file) return
+    console.log('[import] starting import of', file.name)
     try {
-      await importData(file)
+      const result = await importData(file)
+      console.log('[import] server response:', result)
       await reloadData()
+      console.log('[import] reloadData complete')
       setImportError('')
-    } catch {
-      setImportError(t('header.importError'))
+    } catch (err) {
+      console.error('[import] error:', err)
+      setImportError(err.message || t('header.importError'))
     }
     e.target.value = ''
   }

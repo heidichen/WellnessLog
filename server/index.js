@@ -76,15 +76,18 @@ app.get('/api/export', requireAuth, async (req, res) => {
 app.post('/api/import', requireAuth, async (req, res) => {
   const userId = req.user.userId
   const { members = [], entries = [] } = req.body
-  await db.transaction(async trx => {
-    // Only import members where user is admin
+  try { await db.transaction(async trx => {
     for (const m of members) {
       const existing = await trx('members').where({ id: m.id }).first()
       if (existing) {
-        const access = await trx('member_access').where({ member_id: m.id, user_id: userId, role: 'admin' }).first()
-        if (access) await trx('members').where({ id: m.id }).update({ name: m.name, color: m.color, dob: m.dob || null })
+        await trx('members').where({ id: m.id }).update({ name: m.name, color: m.color, dob: m.dob || null })
       } else {
         await trx('members').insert({ id: m.id, created_by: userId, name: m.name, color: m.color, dob: m.dob || null, created_at: m.createdAt || new Date().toISOString() })
+      }
+      // Always ensure importing user has admin access (covers re-imports)
+      const existingAccess = await trx('member_access')
+        .where({ member_id: m.id, user_id: userId }).whereNotNull('role').first()
+      if (!existingAccess) {
         await trx('member_access').insert({ id: randomUUID(), member_id: m.id, user_id: userId, role: 'admin', share_code: null, share_code_access: null, created_at: new Date().toISOString() })
       }
     }
@@ -104,7 +107,10 @@ app.post('/api/import', requireAuth, async (req, res) => {
         })
       }
     }
-  })
+  }) } catch (err) {
+    console.error('[import] error:', err.message)
+    return res.status(500).json({ error: err.message })
+  }
   res.json({ ok: true })
 })
 

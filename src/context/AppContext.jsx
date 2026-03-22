@@ -140,10 +140,12 @@ export function AppProvider({ children }) {
 
   const reloadData = useCallback(async () => {
     const [m, e] = await Promise.all([api.getMembers(), api.getEntries()])
+    console.log('[reloadData] members:', m.length, 'entries:', e.length)
     setMembers(m)
     setEntries(e)
     setActiveMemberIdState(prev => {
       const valid = m.find(x => x.id === prev) ? prev : m[0]?.id || null
+      console.log('[reloadData] activeMemberId:', prev, '→', valid)
       saveActiveMemberId(valid)
       return valid
     })
