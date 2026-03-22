@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useT } from '../../i18n/LanguageContext.jsx'
 import { useApp } from '../../context/AppContext'
 import { ENTRY_TYPES } from '../../utils/constants'
 import {
@@ -32,6 +33,7 @@ function TrendCard({ title, subtitle, children }) {
 
 export default function TrendsView() {
   const { members, entries, filterMemberId } = useApp()
+  const { t } = useT()
   const memberId = filterMemberId || members[0]?.id || ''
   const [days, setDays] = useState(30)
 
@@ -39,7 +41,7 @@ export default function TrendsView() {
     return (
       <div className="text-center py-16 text-muted">
         <div className="text-4xl mb-3">📊</div>
-        <p className="font-display text-lg">Add family members to see trends</p>
+        <p className="font-display text-lg">{t('trends.noMembers')}</p>
       </div>
     )
   }
@@ -52,13 +54,14 @@ export default function TrendsView() {
   const maxTimeline = Math.max(...timeline.map(d => d.count), 1)
 
   const activeMemberColor = '#c8956c'
+  const memberName = filterMemberId ? members.find(m => m.id === filterMemberId)?.name : t('trends.allMembers')
 
   return (
     <div>
       {/* Period picker */}
       <div className="flex items-center justify-between mb-5">
         <p className="text-[13px] text-muted">
-          {filterMemberId ? members.find(m => m.id === filterMemberId)?.name : 'All members'} · trends
+          {memberName} · {t('trends.trendsLabel')}
         </p>
         <div className="flex gap-1 bg-surface2 rounded-full p-0.5">
           {[7, 30, 90].map(d => (
@@ -72,9 +75,9 @@ export default function TrendsView() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         {/* Symptom timeline */}
-        <TrendCard title="Symptom Timeline" subtitle={`Daily count over ${days} days`}>
+        <TrendCard title={t('trends.symptomTimeline')} subtitle={t('trends.symptomTimelineSubtitle', { days })}>
           {timeline.every(d => d.count === 0)
-            ? <p className="text-[13px] text-muted">No symptoms in this period</p>
+            ? <p className="text-[13px] text-muted">{t('trends.noSymptoms')}</p>
             : <div className="flex items-end gap-0.5 h-16">
                 {timeline.map(d => (
                   <div key={d.date} title={`${d.date}: ${d.count}`}
@@ -91,9 +94,9 @@ export default function TrendsView() {
         </TrendCard>
 
         {/* Foods */}
-        <TrendCard title="Most Frequent Foods" subtitle="All time">
+        <TrendCard title={t('trends.mostFrequentFoods')} subtitle={t('trends.allTime')}>
           {foods.length === 0
-            ? <p className="text-[13px] text-muted">No food entries yet</p>
+            ? <p className="text-[13px] text-muted">{t('trends.noFoods')}</p>
             : <div className="space-y-2">
                 {foods.map(([food, count]) => (
                   <Bar key={food} label={food} count={count} max={foods[0][1]} color={ENTRY_TYPES.food.color} />
@@ -103,9 +106,9 @@ export default function TrendsView() {
         </TrendCard>
 
         {/* Symptoms */}
-        <TrendCard title="Symptom Frequency" subtitle={`Last ${days} days`}>
+        <TrendCard title={t('trends.symptomFrequency')} subtitle={t('trends.lastNDays', { days })}>
           {symptoms.length === 0
-            ? <p className="text-[13px] text-muted">No symptoms in this period</p>
+            ? <p className="text-[13px] text-muted">{t('trends.noSymptoms')}</p>
             : <div className="space-y-2">
                 {symptoms.map(([s, count]) => (
                   <Bar key={s} label={s} count={count} max={symptoms[0][1]} color={ENTRY_TYPES.symptom.color} />
@@ -115,14 +118,14 @@ export default function TrendsView() {
         </TrendCard>
 
         {/* Correlations */}
-        <TrendCard title="Food → Symptom" subtitle="Foods followed by symptoms within 3 days">
+        <TrendCard title={t('trends.foodSymptom')} subtitle={t('trends.foodSymptomSubtitle')}>
           {correlations.length === 0
-            ? <p className="text-[13px] text-muted">No correlations yet. Keep logging to see patterns.</p>
+            ? <p className="text-[13px] text-muted">{t('trends.noCorrelations')}</p>
             : <table className="w-full border-collapse text-[13px]">
                 <thead>
                   <tr>
-                    <th className="text-left font-mono text-[11px] font-semibold text-muted uppercase tracking-[0.5px] pb-2 border-b border-border">Food</th>
-                    <th className="text-left font-mono text-[11px] font-semibold text-muted uppercase tracking-[0.5px] pb-2 border-b border-border">Symptoms after</th>
+                    <th className="text-left font-mono text-[11px] font-semibold text-muted uppercase tracking-[0.5px] pb-2 border-b border-border">{t('trends.foodCol')}</th>
+                    <th className="text-left font-mono text-[11px] font-semibold text-muted uppercase tracking-[0.5px] pb-2 border-b border-border">{t('trends.symptomsAfterCol')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -146,9 +149,9 @@ export default function TrendsView() {
         </TrendCard>
 
         {/* Medications */}
-        <TrendCard title="Medication Frequency" subtitle={`Last ${days} days`}>
+        <TrendCard title={t('trends.medicationFrequency')} subtitle={t('trends.lastNDays', { days })}>
           {meds.length === 0
-            ? <p className="text-[13px] text-muted">No medications in this period</p>
+            ? <p className="text-[13px] text-muted">{t('trends.noMedications')}</p>
             : <div className="space-y-2">
                 {meds.map(([med, count]) => (
                   <Bar key={med} label={med} count={count} max={meds[0][1]} color={ENTRY_TYPES.medication.color} />

@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
+import { useT } from '../../i18n/LanguageContext.jsx'
 import { useApp } from '../../context/AppContext'
 import { ENTRY_TYPES } from '../../utils/constants'
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval,
-  isSameMonth, isToday, parseISO, addMonths, subMonths, startOfWeek, endOfWeek
+  isSameMonth, isToday, addMonths, subMonths, startOfWeek, endOfWeek
 } from 'date-fns'
 import DayEntries from '../entries/DayEntries'
 import { X, Plus } from 'lucide-react'
@@ -11,6 +12,7 @@ import EntryModal from '../entries/EntryModal'
 
 export default function CalendarView() {
   const { entries, filterMemberId } = useApp()
+  const { t } = useT()
   const [month, setMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(null)
   const [filterType, setFilterType] = useState('all')
@@ -25,7 +27,9 @@ export default function CalendarView() {
     return entries.filter(e =>
       e.date === dateStr &&
       (!filterMemberId || e.memberId === filterMemberId) &&
-      (filterType === 'all' || e.type === filterType)
+      (filterType === 'all'
+        ? !ENTRY_TYPES[e.type]?.calendarHidden
+        : e.type === filterType)
     )
   }
 
@@ -34,13 +38,15 @@ export default function CalendarView() {
   const chipBase = 'px-3 py-1 rounded-full border text-[11px] font-medium cursor-pointer transition-all'
   const chipInactive = 'border-border bg-surface text-muted hover:border-muted'
 
+  const dayHeaders = t('calendar.days')
+
   return (
     <div>
       {/* Month nav */}
       <div className="flex items-center gap-3 mb-4">
         <button
           onClick={() => setMonth(m => subMonths(m, 1))}
-          className="w-8 h-8 rounded-full border border-border bg-surface flex items-center justify-center text-ink hover:border-accent hover:text-accent transition-all text-sm"
+          className="w-8 h-8 rounded-full border border-border bg-surface flex items-center justify-center text-ink hover:border-accent hover:text-accent active:border-accent active:text-accent transition-all text-sm"
         >
           ←
         </button>
@@ -49,7 +55,7 @@ export default function CalendarView() {
         </h2>
         <button
           onClick={() => setMonth(m => addMonths(m, 1))}
-          className="w-8 h-8 rounded-full border border-border bg-surface flex items-center justify-center text-ink hover:border-accent hover:text-accent transition-all text-sm"
+          className="w-8 h-8 rounded-full border border-border bg-surface flex items-center justify-center text-ink hover:border-accent hover:text-accent active:border-accent active:text-accent transition-all text-sm"
         >
           →
         </button>
@@ -58,22 +64,22 @@ export default function CalendarView() {
       {/* Filters */}
       <div className="flex gap-2 flex-wrap mb-4">
         <button onClick={() => setFilterType('all')} className={`${chipBase} ${filterType === 'all' ? 'border-accent bg-accent-light text-accent' : chipInactive}`}>
-          All types
+          {t('types.allTypes')}
         </button>
         {Object.entries(ENTRY_TYPES).map(([key, cfg]) => (
           <button key={key} onClick={() => setFilterType(key)} className={chipBase}
             style={filterType === key
               ? { backgroundColor: cfg.lightBg, borderColor: cfg.color, color: cfg.color }
               : { borderColor: '#e8e2d9', backgroundColor: 'white', color: '#8a8078' }}>
-            {cfg.label}
+            {t(`types.${key}`)}
           </button>
         ))}
       </div>
 
       {/* Day headers */}
       <div className="grid grid-cols-7 mb-1">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-          <div key={d} className="text-center font-mono text-[11px] font-semibold text-muted uppercase tracking-[0.5px] py-2">{d}</div>
+        {dayHeaders.map((d, i) => (
+          <div key={i} className="text-center font-mono text-[11px] font-semibold text-muted uppercase tracking-[0.5px] py-2">{d}</div>
         ))}
       </div>
 
@@ -86,7 +92,7 @@ export default function CalendarView() {
           const selected = selectedDate && format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
 
           if (!inMonth) {
-            return <div key={day.toISOString()} className="min-h-[90px]" />
+            return <div key={day.toISOString()} className="min-h-[64px] md:min-h-[90px]" />
           }
 
           return (
@@ -125,54 +131,49 @@ export default function CalendarView() {
         {Object.entries(ENTRY_TYPES).map(([key, cfg]) => (
           <div key={key} className="flex items-center gap-1.5 text-[12px] text-muted font-medium">
             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} />
-            {cfg.label}
+            {t(`types.${key}`)}
           </div>
         ))}
       </div>
 
-      {/* Day detail — bottom sheet */}
-      <div
-        className={`fixed inset-0 z-40 flex items-end justify-center transition-opacity duration-200 ${selectedDate ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-        style={{ background: 'rgba(26,23,20,0.3)' }}
-        onClick={e => { if (e.target === e.currentTarget) setSelectedDate(null) }}
-      >
+      {/* Day detail — centered modal */}
+      {selectedDate && (
         <div
-          className={`bg-surface rounded-t-2xl w-full max-w-2xl max-h-[70vh] overflow-y-auto shadow-lg transition-transform duration-300 ${selectedDate ? 'translate-y-0' : 'translate-y-full'}`}
-          style={{ padding: '24px' }}
+          className="fixed inset-0 z-40 flex items-center justify-center p-4"
+          style={{ background: 'rgba(26,23,20,0.4)', backdropFilter: 'blur(4px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setSelectedDate(null) }}
         >
-          {selectedDate && (
-            <>
-              <div className="flex items-start justify-between mb-1">
-                <div>
-                  <h3 className="font-display text-[18px] font-medium text-ink">
-                    {format(selectedDate, 'EEEE, MMMM d')}
-                  </h3>
-                  <p className="text-[12px] text-muted mt-0.5">
-                    {selectedEntries.length} {selectedEntries.length === 1 ? 'entry' : 'entries'}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setAddingForDate(format(selectedDate, 'yyyy-MM-dd'))}
-                    className="flex items-center gap-1 bg-accent hover:bg-accent-hover text-white px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all"
-                  >
-                    <Plus size={13} /> Add entry
-                  </button>
-                  <button onClick={() => setSelectedDate(null)} className="p-1 text-muted hover:text-ink transition-colors">
-                    <X size={18} />
-                  </button>
-                </div>
+          <div className="bg-surface rounded-2xl w-full max-w-lg shadow-lg flex flex-col" style={{ maxHeight: '80vh' }}>
+            <div className="flex items-start justify-between px-6 pt-6 pb-4 flex-shrink-0">
+              <div>
+                <h3 className="font-display text-[18px] font-medium text-ink">
+                  {format(selectedDate, 'EEEE, MMMM d')}
+                </h3>
+                <p className="text-[12px] text-muted mt-0.5">
+                  {t('calendar.entries', { count: selectedEntries.length })}
+                </p>
               </div>
-              <div className="mt-4 space-y-2">
-                {selectedEntries.length === 0
-                  ? <p className="text-[13px] text-muted text-center py-8">No entries for this day</p>
-                  : <DayEntries entries={[...selectedEntries].sort((a, b) => (a.time || '').localeCompare(b.time || ''))} />
-                }
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setAddingForDate(format(selectedDate, 'yyyy-MM-dd'))}
+                  className="flex items-center gap-1 bg-accent hover:bg-accent-hover active:bg-accent-hover text-white px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all"
+                >
+                  <Plus size={13} /> {t('calendar.addEntry')}
+                </button>
+                <button onClick={() => setSelectedDate(null)} className="p-2 text-muted hover:text-ink active:text-ink transition-colors rounded-full hover:bg-surface2">
+                  <X size={18} />
+                </button>
               </div>
-            </>
-          )}
+            </div>
+            <div className="overflow-y-auto px-6 pb-6">
+              {selectedEntries.length === 0
+                ? <p className="text-[13px] text-muted text-center py-8">{t('calendar.noEntries')}</p>
+                : <DayEntries entries={[...selectedEntries].sort((a, b) => (a.time || '').localeCompare(b.time || ''))} />
+              }
+            </div>
+          </div>
         </div>
-      </div>
+      )}
       {addingForDate && (
         <EntryModal
           defaultDate={addingForDate}

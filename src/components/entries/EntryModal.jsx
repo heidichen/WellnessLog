@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useT } from '../../i18n/LanguageContext.jsx'
 import { useApp } from '../../context/AppContext'
 import { ENTRY_TYPES, SEVERITY_LEVELS, SLEEP_QUALITY_LEVELS, MEMBER_COLORS } from '../../utils/constants'
 import { analyzeFood, fileToBase64 } from '../../utils/claude'
@@ -8,6 +9,7 @@ import { X, Camera, Loader2, AlertCircle } from 'lucide-react'
 
 export default function EntryModal({ onClose, initialEntry = null, defaultDate = null }) {
   const { members, activeMemberId, addEntry, updateEntry, getAutocomplete } = useApp()
+  const { t } = useT()
   const isEdit = !!initialEntry
 
   const [form, setForm] = useState({
@@ -63,11 +65,14 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
   async function handleSubmit(e) {
     e.preventDefault()
     const isSleep = form.type === 'sleep'
-    if (!isSleep && !form.title.trim()) return
+    const isNote = form.type === 'note'
+    if (!isSleep && !isNote && !form.title.trim()) return
     setSaving(true)
     try {
       const data = isSleep
         ? { ...form, title: form.sleepDuration ? `${form.sleepDuration}h sleep` : 'Sleep' }
+        : isNote
+        ? { ...form, title: form.title.trim() || 'Note' }
         : form
       if (isEdit) await updateEntry(initialEntry.id, data)
       else await addEntry(data)
@@ -77,8 +82,6 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
     }
   }
 
-  const typeConfig = ENTRY_TYPES[form.type]
-
   const labelCls = 'block font-mono text-[11px] font-semibold text-muted uppercase tracking-[0.5px] mb-1.5'
   const inputCls = 'w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-bg text-ink placeholder:text-muted outline-none transition-colors focus:border-accent'
 
@@ -87,7 +90,7 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
       <div className="bg-surface rounded-2xl shadow-lg w-full max-w-[480px] max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-7 pt-7 pb-5">
           <h2 className="font-display text-[20px] font-medium text-ink">
-            {isEdit ? 'Edit entry' : 'New entry'}
+            {isEdit ? t('entry.editEntry') : t('entry.newEntry')}
           </h2>
           <button onClick={onClose} className="p-1 text-muted hover:text-ink transition-colors">
             <X size={18} />
@@ -98,7 +101,7 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
           {/* Member */}
           {members.length > 1 && (
             <div>
-              <label className={labelCls}>Member</label>
+              <label className={labelCls}>{t('entry.memberLabel')}</label>
               <div className="flex gap-2 flex-wrap">
                 {members.map(m => {
                   const color = MEMBER_COLORS.find(c => c.id === m.color)?.hex || '#8a8078'
@@ -123,7 +126,7 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
 
           {/* Type */}
           <div>
-            <label className={labelCls}>Type</label>
+            <label className={labelCls}>{t('entry.typeLabel')}</label>
             <div className="flex gap-2 flex-wrap">
               {Object.entries(ENTRY_TYPES).map(([key, cfg]) => {
                 const active = form.type === key
@@ -137,7 +140,7 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
                       ? { backgroundColor: cfg.lightBg, borderColor: cfg.color, color: cfg.color }
                       : { borderColor: '#e8e2d9', color: '#8a8078', backgroundColor: 'white' }}
                   >
-                    {cfg.label}
+                    {t(`types.${key}`)}
                   </button>
                 )
               })}
@@ -147,43 +150,46 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
           {/* Date & Time */}
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className={labelCls}>Date</label>
+              <label className={labelCls}>{t('entry.dateLabel')}</label>
               <input type="date" value={form.date} onChange={e => set('date', e.target.value)} className={inputCls} />
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between mb-1.5">
-                <label className="font-mono text-[11px] font-semibold text-muted uppercase tracking-[0.5px]">Time</label>
+                <label className="font-mono text-[11px] font-semibold text-muted uppercase tracking-[0.5px]">{t('entry.timeLabel')}</label>
                 <button type="button" onClick={() => { setShowTime(v => !v); set('time', '') }} className="text-[11px] text-muted hover:text-ink transition-colors">
-                  {showTime ? 'remove' : '+ add'}
+                  {showTime ? t('entry.timeRemove') : t('entry.timeAdd')}
                 </button>
               </div>
               {showTime
                 ? <input type="time" value={form.time} onChange={e => set('time', e.target.value)} className={inputCls} />
-                : <div className="w-full border border-dashed border-border rounded-lg px-3 py-2.5 text-[12px] text-muted text-center bg-surface2">optional</div>
+                : <div className="w-full border border-dashed border-border rounded-lg px-3 py-2.5 text-[12px] text-muted text-center bg-surface2">{t('entry.timeOptional')}</div>
               }
             </div>
           </div>
 
-          {/* Title */}
-          {form.type !== 'sleep' && (
-          <div>
-            <label className={labelCls}>
-              {form.type === 'food' ? 'What was eaten' : form.type === 'symptom' ? 'Symptom' : form.type === 'medication' ? 'Medication / Supplement' : 'Activity'}
-            </label>
-            <AutocompleteInput
-              value={form.title}
-              onChange={v => set('title', v)}
-              onSelect={handleTitleSelect}
-              suggestions={suggestions}
-              placeholder="Type or select from history…"
-            />
-          </div>
+          {/* Title (not for sleep or note) */}
+          {form.type !== 'sleep' && form.type !== 'note' && (
+            <div>
+              <label className={labelCls}>
+                {form.type === 'food' ? t('entry.titleFood')
+                  : form.type === 'symptom' ? t('entry.titleSymptom')
+                  : form.type === 'medication' ? t('entry.titleMedication')
+                  : t('entry.titleActivity')}
+              </label>
+              <AutocompleteInput
+                value={form.title}
+                onChange={v => set('title', v)}
+                onSelect={handleTitleSelect}
+                suggestions={suggestions}
+                placeholder={t('entry.titlePlaceholder')}
+              />
+            </div>
           )}
 
           {/* Photo (food only) */}
           {form.type === 'food' && (
             <div>
-              <label className={labelCls}>Photo (optional)</label>
+              <label className={labelCls}>{t('entry.photoLabel')}</label>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
@@ -192,7 +198,7 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-[13px] text-muted hover:border-accent hover:text-accent transition-all disabled:opacity-50"
                 >
                   {photoLoading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
-                  {photoLoading ? 'Analyzing…' : 'Add photo'}
+                  {photoLoading ? t('entry.analyzing') : t('entry.addPhoto')}
                 </button>
                 <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="hidden" />
                 {form.photoDataUrl && (
@@ -211,7 +217,7 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
           {form.type === 'sleep' && (
             <>
               <div>
-                <label className={labelCls}>Sleep quality</label>
+                <label className={labelCls}>{t('entry.sleepQualityLabel')}</label>
                 <div className="flex gap-2">
                   {SLEEP_QUALITY_LEVELS.map(q => {
                     const active = form.sleepQuality === q
@@ -231,14 +237,14 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
                           ? { backgroundColor: colors[q].bg, borderColor: colors[q].border, color: colors[q].color }
                           : { borderColor: '#e8e2d9', color: '#8a8078', backgroundColor: 'white' }}
                       >
-                        {q}
+                        {t(`sleepQuality.${q}`)}
                       </button>
                     )
                   })}
                 </div>
               </div>
               <div>
-                <label className={labelCls}>Duration (optional)</label>
+                <label className={labelCls}>{t('entry.durationLabel')}</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
@@ -247,10 +253,10 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
                     step="0.5"
                     value={form.sleepDuration}
                     onChange={e => set('sleepDuration', e.target.value)}
-                    placeholder="e.g. 7.5"
+                    placeholder={t('entry.durationPlaceholder')}
                     className={`${inputCls} w-32`}
                   />
-                  <span className="text-[13px] text-muted">hours</span>
+                  <span className="text-[13px] text-muted">{t('entry.hours')}</span>
                 </div>
               </div>
             </>
@@ -259,14 +265,14 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
           {/* Severity (symptom only) */}
           {form.type === 'symptom' && (
             <div>
-              <label className={labelCls}>Severity</label>
+              <label className={labelCls}>{t('entry.severityLabel')}</label>
               <div className="flex gap-2">
                 {SEVERITY_LEVELS.map(s => {
                   const active = form.severity === s
                   const colors = {
-                    mild: { bg: '#edf5ed', border: '#6b9e6b', color: '#6b9e6b' },
+                    mild:     { bg: '#edf5ed', border: '#6b9e6b', color: '#6b9e6b' },
                     moderate: { bg: '#f7f3e3', border: '#b5a046', color: '#b5a046' },
-                    severe: { bg: '#faeee8', border: '#c07b5a', color: '#c07b5a' },
+                    severe:   { bg: '#faeee8', border: '#c07b5a', color: '#c07b5a' },
                   }
                   return (
                     <button
@@ -278,7 +284,7 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
                         ? { backgroundColor: colors[s].bg, borderColor: colors[s].border, color: colors[s].color }
                         : { borderColor: '#e8e2d9', color: '#8a8078', backgroundColor: 'white' }}
                     >
-                      {s}
+                      {t(`severity.${s}`)}
                     </button>
                   )
                 })}
@@ -288,26 +294,26 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
 
           {/* Notes */}
           <div>
-            <label className={labelCls}>Notes (optional)</label>
+            <label className={labelCls}>{form.type === 'note' ? t('entry.noteLabel') : t('entry.notesLabel')}</label>
             <textarea
               value={form.notes}
               onChange={e => set('notes', e.target.value)}
-              rows={2}
-              placeholder="Any additional details…"
+              rows={form.type === 'note' ? 5 : 2}
+              placeholder={form.type === 'note' ? t('entry.notePlaceholder') : t('entry.notesPlaceholder')}
               className={`${inputCls} resize-none`}
             />
           </div>
 
           <div className="flex gap-2.5 justify-end pt-2">
             <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-lg border border-border bg-transparent text-muted text-[14px] font-medium hover:bg-surface2 transition-colors">
-              Cancel
+              {t('entry.cancel')}
             </button>
             <button
               type="submit"
-              disabled={(form.type !== 'sleep' && !form.title.trim()) || saving}
+              disabled={(form.type !== 'sleep' && form.type !== 'note' && !form.title.trim()) || saving}
               className="px-6 py-2.5 rounded-lg bg-accent hover:bg-accent-hover disabled:opacity-40 text-white text-[14px] font-semibold transition-all"
             >
-              {isEdit ? 'Save changes' : 'Save entry'}
+              {isEdit ? t('entry.saveChanges') : t('entry.saveEntry')}
             </button>
           </div>
         </form>

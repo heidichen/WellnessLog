@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useT } from '../../i18n/LanguageContext.jsx'
 import { useApp } from '../../context/AppContext'
 import { ENTRY_TYPES } from '../../utils/constants'
 import { format, parseISO } from 'date-fns'
@@ -6,6 +7,7 @@ import DayEntries from '../entries/DayEntries'
 
 export default function LogView() {
   const { entries, filterMemberId } = useApp()
+  const { t } = useT()
   const [filterType, setFilterType] = useState('all')
 
   const filtered = entries
@@ -31,18 +33,18 @@ export default function LogView() {
           onClick={() => setFilterType('all')}
           className={`${chipBase} ${filterType === 'all' ? 'border-accent bg-accent-light text-accent' : chipInactive}`}
         >
-          All types
+          {t('types.allTypes')}
         </button>
         {Object.entries(ENTRY_TYPES).map(([key, cfg]) => (
           <button
             key={key}
             onClick={() => setFilterType(key)}
-            className={`${chipBase}`}
+            className={chipBase}
             style={filterType === key
               ? { backgroundColor: cfg.lightBg, borderColor: cfg.color, color: cfg.color }
               : { borderColor: '#e8e2d9', backgroundColor: 'white', color: '#8a8078' }}
           >
-            {cfg.label}
+            {t(`types.${key}`)}
           </button>
         ))}
       </div>
@@ -50,8 +52,8 @@ export default function LogView() {
       {dates.length === 0 && (
         <div className="text-center py-16 text-muted">
           <div className="text-4xl mb-3">📋</div>
-          <p className="font-display text-lg text-muted">No entries yet</p>
-          <p className="text-[13px] mt-1 text-muted">Press "Add entry" to get started</p>
+          <p className="font-display text-lg text-muted">{t('log.empty')}</p>
+          <p className="text-[13px] mt-1 text-muted">{t('log.emptyHint')}</p>
         </div>
       )}
 

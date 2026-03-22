@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useT } from '../../i18n/LanguageContext.jsx'
 import { useApp } from '../../context/AppContext'
 import { ENTRY_TYPES, MEMBER_COLORS } from '../../utils/constants'
 import { format, parseISO } from 'date-fns'
@@ -7,6 +8,7 @@ import { Pencil, Trash2 } from 'lucide-react'
 
 export default function EntryCard({ entry, hideMember = false }) {
   const { members, deleteEntry } = useApp()
+  const { t } = useT()
   const [editing, setEditing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
@@ -31,7 +33,7 @@ export default function EntryCard({ entry, hideMember = false }) {
           className="text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap flex-shrink-0 mt-0.5"
           style={{ background: typeConfig.lightBg, color: typeConfig.color }}
         >
-          {typeConfig.label}
+          {t(`types.${entry.type}`, entry.type)}
         </span>
 
         {/* Content */}
@@ -44,7 +46,7 @@ export default function EntryCard({ entry, hideMember = false }) {
                 : entry.severity === 'moderate' ? 'bg-activity-light text-activity'
                 : 'bg-symptom-light text-symptom'
               }`}>
-                {entry.severity}
+                {t(`severity.${entry.severity}`, entry.severity)}
               </span>
             )}
             {entry.type === 'sleep' && entry.sleepQuality && (
@@ -52,7 +54,7 @@ export default function EntryCard({ entry, hideMember = false }) {
                 backgroundColor: { poor: '#faeee8', fair: '#f7f3e3', good: '#edf5ed', great: '#eaeff8' }[entry.sleepQuality] || '#eaeff8',
                 color: { poor: '#c07b5a', fair: '#b5a046', good: '#6b9e6b', great: '#7b8fb5' }[entry.sleepQuality] || '#7b8fb5',
               }}>
-                {entry.sleepQuality}
+                {t(`sleepQuality.${entry.sleepQuality}`, entry.sleepQuality)}
               </span>
             )}
           </div>

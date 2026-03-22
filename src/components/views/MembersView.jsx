@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useT } from '../../i18n/LanguageContext.jsx'
 import { useApp } from '../../context/AppContext'
 import { MEMBER_COLORS } from '../../utils/constants'
 import { differenceInYears, differenceInMonths, parseISO } from 'date-fns'
@@ -8,6 +9,7 @@ const labelCls = 'block font-mono text-[11px] font-semibold text-muted uppercase
 const inputCls = 'w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-bg text-ink placeholder:text-muted outline-none transition-colors focus:border-accent'
 
 function MemberForm({ initial = {}, onSave, onCancel }) {
+  const { t } = useT()
   const [name, setName] = useState(initial.name || '')
   const [color, setColor] = useState(initial.color || MEMBER_COLORS[0].id)
   const [dob, setDob] = useState(initial.dob || '')
@@ -15,11 +17,11 @@ function MemberForm({ initial = {}, onSave, onCancel }) {
   return (
     <div className="bg-surface2 rounded-card border border-border p-4 space-y-3">
       <div>
-        <label className={labelCls}>Name</label>
-        <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Mom, Baby Leo…" className={inputCls} />
+        <label className={labelCls}>{t('members.nameLabel')}</label>
+        <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder={t('members.namePlaceholder')} className={inputCls} />
       </div>
       <div>
-        <label className={labelCls}>Color</label>
+        <label className={labelCls}>{t('members.colorLabel')}</label>
         <div className="flex gap-2 flex-wrap mt-1">
           {MEMBER_COLORS.map(c => (
             <button
@@ -34,7 +36,7 @@ function MemberForm({ initial = {}, onSave, onCancel }) {
         </div>
       </div>
       <div>
-        <label className={labelCls}>Date of birth (optional)</label>
+        <label className={labelCls}>{t('members.dobLabel')}</label>
         <input type="date" value={dob} onChange={e => setDob(e.target.value)} className={inputCls} />
       </div>
       <div className="flex gap-2 pt-1">
@@ -43,44 +45,45 @@ function MemberForm({ initial = {}, onSave, onCancel }) {
           disabled={!name.trim()}
           className="flex items-center gap-1.5 px-4 py-2 bg-accent hover:bg-accent-hover disabled:opacity-40 text-white rounded-lg text-[13px] font-semibold transition-all"
         >
-          <Check size={13} /> Save
+          <Check size={13} /> {t('members.save')}
         </button>
         <button
           onClick={onCancel}
           className="flex items-center gap-1.5 px-3 py-2 border border-border bg-surface text-muted rounded-lg text-[13px] font-medium hover:bg-surface2 transition-all"
         >
-          <X size={13} /> Cancel
+          <X size={13} /> {t('members.cancel')}
         </button>
       </div>
     </div>
   )
 }
 
-function getAge(dob) {
-  if (!dob) return null
-  const birth = parseISO(dob)
-  const years = differenceInYears(new Date(), birth)
-  if (years < 2) {
-    const months = differenceInMonths(new Date(), birth)
-    return `${months} month${months !== 1 ? 's' : ''} old`
-  }
-  return `${years} year${years !== 1 ? 's' : ''} old`
-}
-
 export default function MembersView() {
   const { members, entries, addMember, updateMember, deleteMember } = useApp()
+  const { t } = useT()
   const [showAdd, setShowAdd] = useState(false)
   const [editingId, setEditingId] = useState(null)
+
+  function getAge(dob) {
+    if (!dob) return null
+    const birth = parseISO(dob)
+    const years = differenceInYears(new Date(), birth)
+    if (years < 2) {
+      const months = differenceInMonths(new Date(), birth)
+      return t('members.monthsOld', { count: months })
+    }
+    return t('members.yearsOld', { count: years })
+  }
 
   return (
     <div>
       <div className="flex items-center justify-between mb-5">
-        <h2 className="font-display text-[22px] font-medium text-ink">Family Members</h2>
+        <h2 className="font-display text-[22px] font-medium text-ink">{t('members.title')}</h2>
         <button
           onClick={() => setShowAdd(true)}
           className="flex items-center gap-1.5 bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-full text-[13px] font-semibold transition-all"
         >
-          <Plus size={13} /> Add member
+          <Plus size={13} /> {t('members.addMember')}
         </button>
       </div>
 
@@ -93,8 +96,8 @@ export default function MembersView() {
       {members.length === 0 && !showAdd && (
         <div className="text-center py-16 text-muted">
           <div className="text-4xl mb-3">👨‍👩‍👧‍👦</div>
-          <p className="font-display text-lg">No family members yet</p>
-          <p className="text-[13px] mt-1">Add your first family member to get started</p>
+          <p className="font-display text-lg">{t('members.empty')}</p>
+          <p className="text-[13px] mt-1">{t('members.emptyHint')}</p>
         </div>
       )}
 
@@ -137,7 +140,7 @@ export default function MembersView() {
                       </button>
                       <button
                         onClick={async () => {
-                          if (window.confirm(`Delete ${m.name} and all their entries?`)) await deleteMember(m.id)
+                          if (window.confirm(t('members.deleteConfirm', { name: m.name }))) await deleteMember(m.id)
                         }}
                         className="p-1.5 text-muted hover:text-symptom transition-colors"
                       >
@@ -148,11 +151,11 @@ export default function MembersView() {
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <div className="bg-surface2 rounded-lg p-2.5 text-center">
                       <p className="font-mono text-[18px] font-medium text-ink">{memberEntries.length}</p>
-                      <p className="text-[11px] text-muted mt-0.5">Total entries</p>
+                      <p className="text-[11px] text-muted mt-0.5">{t('members.totalEntries')}</p>
                     </div>
                     <div className="bg-surface2 rounded-lg p-2.5 text-center">
                       <p className="font-mono text-[18px] font-medium text-ink">{memberEntries.filter(e => e.type === 'symptom').length}</p>
-                      <p className="text-[11px] text-muted mt-0.5">Symptoms</p>
+                      <p className="text-[11px] text-muted mt-0.5">{t('members.symptoms')}</p>
                     </div>
                   </div>
                 </div>

@@ -12,13 +12,15 @@
     "start": "node server/index.js"
   },
   "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "cors": "^2.8.5",
+    "date-fns": "^3.6.0",
+    "express": "^4.18.2",
+    "i18next": "^25.10.3",
+    "lucide-react": "^0.447.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "date-fns": "^3.6.0",
-    "lucide-react": "^0.447.0",
-    "express": "^4.18.2",
-    "better-sqlite3": "^9.4.3",
-    "cors": "^2.8.5"
+    "react-i18next": "^16.6.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

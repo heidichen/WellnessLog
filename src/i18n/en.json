@@ -1,0 +1,119 @@
+{
+  "nav": {
+    "log": "Log",
+    "calendar": "Calendar",
+    "trends": "Trends",
+    "family": "Family",
+    "members": "Family"
+  },
+  "header": {
+    "addEntry": "Add entry",
+    "offlineBanner": "Offline — new entries will sync when connected",
+    "importError": "Invalid backup file"
+  },
+  "types": {
+    "food": "Food",
+    "symptom": "Symptom",
+    "medication": "Medication",
+    "activity": "Activity",
+    "sleep": "Sleep",
+    "note": "Note",
+    "allTypes": "All types"
+  },
+  "log": {
+    "empty": "No entries yet",
+    "emptyHint": "Press \"Add entry\" to get started"
+  },
+  "calendar": {
+    "days": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    "addEntry": "Add entry",
+    "noEntries": "No entries for this day",
+    "entries_one": "{{count}} entry",
+    "entries_other": "{{count}} entries"
+  },
+  "trends": {
+    "noMembers": "Add family members to see trends",
+    "allMembers": "All members",
+    "trendsLabel": "trends",
+    "symptomTimeline": "Symptom Timeline",
+    "symptomTimelineSubtitle": "Daily count over {{days}} days",
+    "noSymptoms": "No symptoms in this period",
+    "mostFrequentFoods": "Most Frequent Foods",
+    "allTime": "All time",
+    "noFoods": "No food entries yet",
+    "symptomFrequency": "Symptom Frequency",
+    "lastNDays": "Last {{days}} days",
+    "foodSymptom": "Food → Symptom",
+    "foodSymptomSubtitle": "Foods followed by symptoms within 3 days",
+    "noCorrelations": "No correlations yet. Keep logging to see patterns.",
+    "foodCol": "Food",
+    "symptomsAfterCol": "Symptoms after",
+    "medicationFrequency": "Medication Frequency",
+    "noMedications": "No medications in this period"
+  },
+  "members": {
+    "title": "Family Members",
+    "addMember": "Add member",
+    "empty": "No family members yet",
+    "emptyHint": "Add your first family member to get started",
+    "totalEntries": "Total entries",
+    "symptoms": "Symptoms",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g. Mom, Baby Leo…",
+    "colorLabel": "Color",
+    "dobLabel": "Date of birth (optional)",
+    "save": "Save",
+    "cancel": "Cancel",
+    "monthsOld_one": "{{count}} month old",
+    "monthsOld_other": "{{count}} months old",
+    "yearsOld_one": "{{count}} year old",
+    "yearsOld_other": "{{count}} years old",
+    "deleteConfirm": "Delete {{name}} and all their entries?"
+  },
+  "entry": {
+    "newEntry": "New entry",
+    "editEntry": "Edit entry",
+    "memberLabel": "Member",
+    "typeLabel": "Type",
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "timeRemove": "remove",
+    "timeAdd": "+ add",
+    "timeOptional": "optional",
+    "titleFood": "What was eaten",
+    "titleSymptom": "Symptom",
+    "titleMedication": "Medication / Supplement",
+    "titleActivity": "Activity",
+    "titleNote": "Title (optional)",
+    "titlePlaceholder": "Type or select from history…",
+    "photoLabel": "Photo (optional)",
+    "addPhoto": "Add photo",
+    "analyzing": "Analyzing…",
+    "severityLabel": "Severity",
+    "sleepQualityLabel": "Sleep quality",
+    "durationLabel": "Duration (optional)",
+    "durationPlaceholder": "e.g. 7.5",
+    "hours": "hours",
+    "notesLabel": "Notes (optional)",
+    "noteLabel": "Note",
+    "notesPlaceholder": "Any additional details…",
+    "notePlaceholder": "Write your note…",
+    "cancel": "Cancel",
+    "saveChanges": "Save changes",
+    "saveEntry": "Save entry"
+  },
+  "severity": {
+    "mild": "mild",
+    "moderate": "moderate",
+    "severe": "severe"
+  },
+  "sleepQuality": {
+    "poor": "poor",
+    "fair": "fair",
+    "good": "good",
+    "great": "great"
+  },
+  "app": {
+    "loading": "Loading…"
+  }
+}

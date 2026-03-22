@@ -1,0 +1,119 @@
+{
+  "nav": {
+    "log": "日志",
+    "calendar": "日历",
+    "trends": "趋势",
+    "family": "家人",
+    "members": "家人"
+  },
+  "header": {
+    "addEntry": "添加记录",
+    "offlineBanner": "已离线 — 重新连接后将同步新记录",
+    "importError": "无效的备份文件"
+  },
+  "types": {
+    "food": "饮食",
+    "symptom": "症状",
+    "medication": "药物",
+    "activity": "活动",
+    "sleep": "睡眠",
+    "note": "笔记",
+    "allTypes": "全部类型"
+  },
+  "log": {
+    "empty": "暂无记录",
+    "emptyHint": "点击「添加记录」开始使用"
+  },
+  "calendar": {
+    "days": ["日", "一", "二", "三", "四", "五", "六"],
+    "addEntry": "添加记录",
+    "noEntries": "这一天没有记录",
+    "entries_one": "{{count}} 条记录",
+    "entries_other": "{{count}} 条记录"
+  },
+  "trends": {
+    "noMembers": "请先添加家庭成员以查看趋势",
+    "allMembers": "全部成员",
+    "trendsLabel": "趋势",
+    "symptomTimeline": "症状时间轴",
+    "symptomTimelineSubtitle": "{{days}} 天内每日数量",
+    "noSymptoms": "此期间没有症状记录",
+    "mostFrequentFoods": "最常见食物",
+    "allTime": "所有时间",
+    "noFoods": "暂无饮食记录",
+    "symptomFrequency": "症状频率",
+    "lastNDays": "最近 {{days}} 天",
+    "foodSymptom": "食物 → 症状",
+    "foodSymptomSubtitle": "3 天内出现症状的食物",
+    "noCorrelations": "暂无关联数据，继续记录以发现规律",
+    "foodCol": "食物",
+    "symptomsAfterCol": "随后的症状",
+    "medicationFrequency": "药物频率",
+    "noMedications": "此期间没有药物记录"
+  },
+  "members": {
+    "title": "家庭成员",
+    "addMember": "添加成员",
+    "empty": "暂无家庭成员",
+    "emptyHint": "添加第一位家庭成员以开始使用",
+    "totalEntries": "总记录数",
+    "symptoms": "症状",
+    "nameLabel": "姓名",
+    "namePlaceholder": "例如：妈妈、小明…",
+    "colorLabel": "颜色",
+    "dobLabel": "出生日期（可选）",
+    "save": "保存",
+    "cancel": "取消",
+    "monthsOld_one": "{{count}} 个月",
+    "monthsOld_other": "{{count}} 个月",
+    "yearsOld_one": "{{count}} 岁",
+    "yearsOld_other": "{{count}} 岁",
+    "deleteConfirm": "删除 {{name}} 及其所有记录？"
+  },
+  "entry": {
+    "newEntry": "新建记录",
+    "editEntry": "编辑记录",
+    "memberLabel": "成员",
+    "typeLabel": "类型",
+    "dateLabel": "日期",
+    "timeLabel": "时间",
+    "timeRemove": "删除",
+    "timeAdd": "+ 添加",
+    "timeOptional": "可选",
+    "titleFood": "吃了什么",
+    "titleSymptom": "症状",
+    "titleMedication": "药物 / 补充剂",
+    "titleActivity": "活动",
+    "titleNote": "标题（可选）",
+    "titlePlaceholder": "输入或从历史记录中选择…",
+    "photoLabel": "照片（可选）",
+    "addPhoto": "添加照片",
+    "analyzing": "分析中…",
+    "severityLabel": "严重程度",
+    "sleepQualityLabel": "睡眠质量",
+    "durationLabel": "时长（可选）",
+    "durationPlaceholder": "例如 7.5",
+    "hours": "小时",
+    "notesLabel": "备注（可选）",
+    "noteLabel": "笔记",
+    "notesPlaceholder": "任何其他细节…",
+    "notePlaceholder": "写下你的笔记…",
+    "cancel": "取消",
+    "saveChanges": "保存修改",
+    "saveEntry": "保存记录"
+  },
+  "severity": {
+    "mild": "轻度",
+    "moderate": "中度",
+    "severe": "重度"
+  },
+  "sleepQuality": {
+    "poor": "差",
+    "fair": "一般",
+    "good": "良好",
+    "great": "极好"
+  },
+  "app": {
+    "loading": "加载中…"
+  }
+}

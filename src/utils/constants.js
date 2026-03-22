@@ -4,6 +4,7 @@ export const ENTRY_TYPES = {
   medication: { label: 'Medication', color: '#9b76b5', lightBg: '#f2ecf8', dot: 'bg-medication' },
   activity:   { label: 'Activity',   color: '#b5a046', lightBg: '#f7f3e3', dot: 'bg-activity' },
   sleep:      { label: 'Sleep',      color: '#7b8fb5', lightBg: '#eaeff8', dot: 'bg-[#7b8fb5]' },
+  note:       { label: 'Note',       color: '#a09080', lightBg: '#f2ede8', dot: 'bg-[#a09080]', calendarHidden: true },
 }
 
 export const SEVERITY_LEVELS = ['mild', 'moderate', 'severe']
