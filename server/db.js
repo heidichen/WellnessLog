@@ -4,11 +4,8 @@ import { dirname, join } from 'path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-// Log all DB-related env vars so we can see exactly what Railway injects
-const dbEnvKeys = Object.keys(process.env).filter(k =>
-  k.includes('DATABASE') || k.includes('POSTGRES') || k.includes('PG') || k === 'NODE_ENV'
-)
-console.log('[db] DB-related env vars present:', dbEnvKeys)
+// Log all env var keys (no values) so we can see exactly what Railway injects
+console.log('[db] All env var keys:', Object.keys(process.env).sort())
 
 // Railway may expose the connection string under several names
 const pgUrl = process.env.DATABASE_URL
