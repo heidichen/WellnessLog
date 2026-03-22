@@ -41,7 +41,7 @@ export default function EntryModal({ onClose, initialEntry = null, defaultDate =
   function handleTitleSelect(suggestion) {
     const parts = form.title.split(',')
     parts[parts.length - 1] = (parts.length > 1 ? ' ' : '') + suggestion
-    set('title', parts.join(',') + ', ')
+    set('title', parts.join(','))
   }
 
   function set(key, value) {
