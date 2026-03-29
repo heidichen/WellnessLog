@@ -1,45 +1,13 @@
-export async function analyzeFood(base64Image, mimeType) {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
-  if (!apiKey || apiKey === 'your_api_key_here') {
-    throw new Error('Claude API key not configured. Add VITE_ANTHROPIC_API_KEY to your .env file.')
-  }
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+export async function analyzeFood(base64, mimeType) {
+  const res = await fetch('/api/analyze-food', {
     method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-      'anthropic-dangerous-direct-browser-calls': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 256,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: { type: 'base64', media_type: mimeType, data: base64Image },
-            },
-            {
-              type: 'text',
-              text: 'List all the foods you can identify in this image, as a simple comma-separated list. Be specific (e.g. \'scrambled egg, steamed broccoli, white rice\') not generic.',
-            },
-          ],
-        },
-      ],
-    }),
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ base64, mimeType }),
   })
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}))
-    throw new Error(err.error?.message || `API error ${response.status}`)
-  }
-
-  const data = await response.json()
-  return data.content[0].text.trim()
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error || `API error ${res.status}`)
+  return data.result
 }
 
 export function fileToBase64(file) {

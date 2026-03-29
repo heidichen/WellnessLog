@@ -21,6 +21,40 @@ app.use(cookieParser())
 // Auth routes — each route handles its own auth internally
 app.use('/api/auth', authRouter)
 
+// Proxy Claude API call server-side (avoids CORS, keeps key secret)
+app.post('/api/analyze-food', requireAuth, async (req, res) => {
+  const { base64, mimeType } = req.body
+  if (!base64 || !mimeType) return res.status(400).json({ error: 'base64 and mimeType required' })
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured on server' })
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 256,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } },
+            { type: 'text', text: 'List all the foods you can identify in this image, as a simple comma-separated list. Be specific (e.g. \'scrambled egg, steamed broccoli, white rice\') not generic.' },
+          ],
+        }],
+      }),
+    })
+    const data = await response.json()
+    if (!response.ok) return res.status(response.status).json({ error: data.error?.message || 'Claude API error' })
+    res.json({ result: data.content[0].text.trim() })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // All member and entry routes require auth
 app.use('/api/members', requireAuth, membersRouter)
 app.use('/api/entries', requireAuth, entriesRouter)
