@@ -18,7 +18,7 @@ export default function EntryCard({ entry, hideMember = false }) {
 
   async function handleDelete() {
     if (confirmDelete) {
-      await deleteEntry(entry.id)
+      try { await deleteEntry(entry.id) } catch (err) { alert(err.message) }
     } else {
       setConfirmDelete(true)
       setTimeout(() => setConfirmDelete(false), 3000)

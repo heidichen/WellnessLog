@@ -66,7 +66,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const entry = await db('entries').where({ id: req.params.id }).first()
   if (!entry) return res.status(404).json({ error: 'Not found' })
-  const ok = await assertMemberAccess(db, entry.member_id, req.user.userId, 'admin')
+  const ok = await assertMemberAccess(db, entry.member_id, req.user.userId, 'editor')
   if (!ok) return res.status(403).json({ error: 'Forbidden' })
   await db('entries').where({ id: req.params.id }).delete()
   res.json({ ok: true })
